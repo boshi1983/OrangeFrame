@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mapper namespace="">
+    <select id="getList" resultType="my_table">
+        select * from my_table limit :page, :pagecount
+    </select>
+    <select id="getPersonById" resultType="my_table">
+        select * from my_table where id = :id
+    </select>
+    <select id="getPersonByFirstName" resultType="my_table">
+        select * from my_table where first_name = :firstName
+    </select>
+    <select id="getCount">
+        select count(*) from my_table
+    </select>
+    <select id="getCountByGender">
+        select count(*) from my_table where gender = :gender
+    </select>
+
+    <insert id="insert">
+        insert into my_table (id, first_name, last_name, gender)values(:id, :first_name, :last_name, :gender)
+    </insert>
+    <update id="updateLastNameById">
+        update my_table set last_name=:lastName where id = :id
+    </update>
+    <delete id="deleteById">
+        delete from my_table where id = :id
+    </delete>
+</mapper>
