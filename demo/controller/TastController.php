@@ -20,6 +20,15 @@ class TastController implements BaseController
 
         echo '------------------------------------------------<br>';
 
+        echo '使用in查询<br>';
+
+        $list = $this->myTable->getListByIn([10001,10002,10003]);
+        foreach ($list as $row) {
+            echo $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
+        }
+
+        echo '------------------------------------------------<br>';
+
         echo '获取firstname=\'Tzvetan\'<br>';
         $list = $this->myTable->getPersonByFirstName('Tzvetan');
         foreach ($list as $row) {
@@ -71,7 +80,6 @@ class TastController implements BaseController
         var_dump($row);
 
         echo '------------------------------------------------<br>';
-
 
     }
 }

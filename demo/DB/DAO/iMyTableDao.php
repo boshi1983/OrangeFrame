@@ -3,6 +3,7 @@
 
 interface iMyTableDao extends iBaseDao
 {
+    function getListByIn(array $ids):array;
     function getList(int $page, int $pagecount):array;
     function getPersonById(int $id):my_table;
     function getPersonByFirstName(string $firstName):array;

@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <mapper namespace="">
+    <!--select id="getListByIn" resultType="my_table">
+        select * from my_table where id in
+    </select-->
+    <select id="getListByIn" resultType="my_table">
+        select * from my_table where id in
+        <foreach collection="$ids" item = "id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        order by id
+    </select>
     <select id="getList" resultType="my_table">
         select * from my_table limit :page, :pagecount
     </select>

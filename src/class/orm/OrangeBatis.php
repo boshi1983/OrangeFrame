@@ -246,19 +246,69 @@ class OrangeBatis
             throw new OrangeBatisException(libxml_get_errors());
         }
 
-        $xmlContent = [];
+        $xmlContents = [];
         foreach ($mapper->children() as $key => $value) {
 
             $id = trim($value->attributes()['id']);
-            $xmlContent[$id] = [
-                'id' => $id,
-                'tag' => $key,
-                'resultType' => trim($value->attributes()['resultType']),
-                'sql' => trim($value)
-            ];
+            if ($value->children()->count() > 0) {
+                $xmlContent = [
+                    'id' => $id,
+                    'tag' => $key,
+                    'resultType' => trim($value->attributes()['resultType'])
+                ];
+                $arr = explode("\n", trim($value));
+
+                $sql = '';
+                $paramid = 0;
+                $funcs = [];
+                foreach ($arr as $data) {
+
+                    $data = trim($data);
+                    if (empty($data)) {
+                        $node = $value->children()[$paramid];
+
+                        $sql .= ' \' . $param' . $paramid . ' . \' ';
+
+                        $func = '$param'.$paramid.' = $this->'.$node->getName().'(';
+                        switch ($node->getName()) {
+                            case 'foreach':
+                                $collection = trim($node->attributes()['collection']);
+                                $item = trim($node->attributes()['item']);
+                                $open = trim($node->attributes()['open']);
+                                $separator = trim($node->attributes()['separator']);
+                                $close = trim($node->attributes()['close']);
+
+                                $content = trim($node);
+
+                                $func .= $collection . ',\'' . $item . '\',\'' . $content . '\',\'' . $open . '\',\'' . $separator . '\',\'' . $close . '\'';
+                                break;
+                            default:
+                                break;
+                        }
+
+                        $func .= ');' . PHP_EOL;
+
+                        $funcs[] = $func;
+                        ++$paramid;
+                    } else {
+                        $sql .= ' ' . $data;
+                    }
+                }
+
+                $xmlContent['funcs'] = $funcs;
+                $xmlContent['sql'] = $sql;
+                $xmlContents[$id] = $xmlContent;
+            } else {
+                $xmlContents[$id] = [
+                    'id' => $id,
+                    'tag' => $key,
+                    'resultType' => trim($value->attributes()['resultType']),
+                    'sql' => trim($value)
+                ];
+            }
         }
 
-        return $xmlContent;
+        return $xmlContents;
     }
 
     /**
@@ -319,7 +369,11 @@ class OrangeBatis
      */
     public function generateMethodContent($method, $paramList, $xmlNode)
     {
-        $content = '$sql = "' . $xmlNode['sql'] . '";' . PHP_EOL;
+        $content = '';
+        if (isset($xmlNode['funcs']) && is_array($xmlNode['funcs'])) {
+            $content .= join('', $xmlNode['funcs']);
+        }
+        $content .= '$sql = \'' . $xmlNode['sql'] . '\';' . PHP_EOL;
 
         foreach ($paramList as $param) {
             if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean', ''])) {
