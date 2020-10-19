@@ -1,12 +1,12 @@
 <?php
 
 
-class my_table
+class my_table extends BaseBean
 {
-    private $id;
-    private $first_name;
-    private $last_name;
-    private $gender;
+    protected $id;
+    protected $first_name;
+    protected $last_name;
+    protected $gender;
 
     /**
      * @return mixed

@@ -20,6 +20,12 @@ class TastController implements BaseController
 
         echo '------------------------------------------------<br>';
 
+        echo '使用json打包实例<br>';
+        echo json_encode($list);
+        echo '<br>';
+
+        echo '------------------------------------------------<br>';
+
         echo '使用in查询<br>';
 
         $list = $this->myTable->getListByIn([10001,10002,10003]);

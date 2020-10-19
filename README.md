@@ -45,10 +45,11 @@
 四.ORM<br>
 对象映射需要几个步骤：<br>
 1.创建一个与表字段对应的Bean，名字对应，可以按照不同的字段数据类型设置映射成员变量的数据类型；<br>
-2.创建DAO操作接口，接口类命名规则：1）小写i起始；2）驼峰式命名方式的表名；3）Dao结尾。这里需要注意，如果传入的参数为对象，需要主动声明；<br>
-3.创建xml，使用表名命名xml的文件名，其中按照示例给出的格式：<br>
+2.Bean中的数据表映射对象，需要继承BaseBean类，且子类的成员变量需要使用protected修饰，这样可以解决json序列化无法获取private修饰成员函数;<br>
+3.创建DAO操作接口，接口类命名规则：1）小写i起始；2）驼峰式命名方式的表名；3）Dao结尾。这里需要注意，如果传入的参数为对象，需要主动声明；<br>
+4.创建xml，使用表名命名xml的文件名，其中按照示例给出的格式：<br>
 节点tag（select、insert、update、delete）；id（接口名）；resultType（返回类型）；sql语句.<br>
-4.使用OrangeBatis::getMapper(类名);或者使用ioc注入方式创建；<br>
+5.使用OrangeBatis::getMapper(类名);或者使用ioc注入方式创建；<br>
 以下为实例demo/controller/TastController打印结果：<br>
 获取5条记录<br>
 10001 Georgi Facello M<br>
@@ -56,6 +57,9 @@
 10003 Parto Bamford M<br>
 10004 Chirstian Koblick M<br>
 10005 Kyoichi Maliniak M<br>
+------------------------------------------------
+使用json打包实例
+[{"id":"10001","first_name":"Georgi","last_name":"Facello","gender":"M"},{"id":"10002","first_name":"Bezalel","last_name":"Simmel","gender":"F"},{"id":"10003","first_name":"Parto","last_name":"Bamford","gender":"M"},{"id":"10004","first_name":"Chirstian","last_name":"Koblick","gender":"M"},{"id":"10005","first_name":"Kyoichi","last_name":"Maliniak","gender":"M"}]
 ------------------------------------------------
 获取firstname='Tzvetan'<br>
 10007 Tzvetan Zielinski F<br>
