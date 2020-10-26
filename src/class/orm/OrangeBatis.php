@@ -257,6 +257,9 @@ class OrangeBatis
                     'resultType' => trim($value->attributes()['resultType'])
                 ];
                 $arr = explode("\n", trim($value));
+                if (count($arr) <= 1) {
+                    $arr[] = '';
+                }
 
                 $sql = '';
                 $paramid = 0;
@@ -426,11 +429,12 @@ class OrangeBatis
     }
 
     /**
-     * @param $interFaceName
-     * @return mixed
+     * @param string $interFaceName
+     * @param bool $bInstance
+     * @return object|string
      * @throws OrangeBatisException
      */
-    public static function getMapper($interFaceName)
+    public static function getMapper($interFaceName, $bInstance = true)
     {
         //去掉前缀i和后缀Dao
         $xmlName = substr($interFaceName, 1, strlen($interFaceName) - 4);
@@ -447,6 +451,11 @@ class OrangeBatis
             require_once $path;
         }
 
-        return Container::instance()->get($className);
+        if ($bInstance) {
+            return Container::instance()->get($className);
+        } else {
+            return $className;
+        }
+
     }
 }

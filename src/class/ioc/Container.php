@@ -41,7 +41,14 @@ class Container
         if (isset($this->cache[$name])) {
             return $this->cache[$name];
         }
-        $reflection = new \ReflectionClass($name);
+
+        $partern = '/i([\w]+)Dao/';
+        if (preg_match_all($partern, $name, $result)) {
+            $batisClassName = OrangeBatis::getMapper($result[0][0], false);
+            $reflection = new \ReflectionClass($batisClassName);
+        } else {
+            $reflection = new \ReflectionClass($name);
+        }
 
         $depends = $this->getDependency($reflection);
         $this->cache[$name] = &$this->createObject($reflection, $depends);
