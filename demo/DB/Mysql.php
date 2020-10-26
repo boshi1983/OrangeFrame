@@ -156,7 +156,7 @@ class Mysql extends Driver
      * @param string $key
      * @return string
      */
-    protected function parseKey(string &$key)
+    protected function parseKey(string $key)
     {
         $key = trim($key);
         if (!is_numeric($key) && !preg_match('/[,\'\"\*\(\)`.\s]/', $key)) {
@@ -172,7 +172,7 @@ class Mysql extends Driver
      * @param string $field 字段名, 默认为'id'.
      * @return array
      */
-    function &load($table, int $id, $field = 'id')
+    function load($table, int $id, $field = 'id')
     {
         if (is_numeric($id) && !empty($id)) {
             $sql = "SELECT * FROM {$table} WHERE {$field}={$id}";
@@ -187,10 +187,10 @@ class Mysql extends Driver
      * @param string $sql
      * @return array
      */
-    public function &get($sql)
+    public function get($sql)
     {
         $rt = null;
-        $result = &$this->query($sql);
+        $result = $this->query($sql);
         if (!empty($result) && is_array($result)) {
             $rt = $result[0];
         }
@@ -215,7 +215,7 @@ class Mysql extends Driver
      * @param object|array $row
      * @return void
      */
-    function save(string $table, &$row)
+    function save(string $table, $row)
     {
         $sqlA = [];
         foreach ($row as $k => $v) {
@@ -244,7 +244,7 @@ class Mysql extends Driver
      * @param string $field 字段名, 默认为'id'.
      * @return int 影响的行数.
      */
-    function update(string $table, &$row, $field = 'id')
+    function update(string $table, $row, $field = 'id')
     {
         $id = 0;
         if (is_object($row)) {

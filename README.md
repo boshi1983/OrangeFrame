@@ -55,44 +55,62 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 4.创建xml，使用表名命名xml的文件名，其中按照示例给出的格式：<br>
 节点tag（select、insert、update、delete）；id（接口名）；resultType（返回类型）；sql语句.<br>
 5.使用OrangeBatis::getMapper(类名);或者使用ioc注入方式创建；<br>
-以下为实例demo/controller/TastController打印结果：<br>
-获取5条记录<br>
-10001 Georgi Facello M<br>
-10002 Bezalel Simmel F<br>
-10003 Parto Bamford M<br>
-10004 Chirstian Koblick M<br>
-10005 Kyoichi Maliniak M<br>
+------------------------------------------------
+以下为实例demo/controller/TastController的执行结果：<br>
+获取5条记录
+sql：select * from my_table limit 0, 5
+10001 Georgi Facello M
+10002 Bezalel Simmel F
+10003 Parto Bamford M
+10004 Chirstian Koblick M
+10005 Kyoichi Maliniak M
 ------------------------------------------------
 使用json打包实例
 [{"id":"10001","first_name":"Georgi","last_name":"Facello","gender":"M"},{"id":"10002","first_name":"Bezalel","last_name":"Simmel","gender":"F"},{"id":"10003","first_name":"Parto","last_name":"Bamford","gender":"M"},{"id":"10004","first_name":"Chirstian","last_name":"Koblick","gender":"M"},{"id":"10005","first_name":"Kyoichi","last_name":"Maliniak","gender":"M"}]
 ------------------------------------------------
-获取firstname='Tzvetan'<br>
-10007 Tzvetan Zielinski F<br>
+使用in查询
+sql：select * from my_table where id in (10001,10002,10003) order by id
+10001 Georgi Facello M
+10002 Bezalel Simmel F
+10003 Parto Bamford M
 ------------------------------------------------
-获取记录总数:<br>
-10条记录<br>
+获取firstname='Tzvetan'
+sql：select * from my_table where first_name = 'Tzvetan'
+10007 Tzvetan Zielinski F
 ------------------------------------------------
-获取性别为F的记录总数:<br>
-5条记录<br>
+获取记录总数:
+10条记录
+sql：select count(*) from my_table LIMIT 1
 ------------------------------------------------
-修改10001号记录的lastname='Mithril'<br>
-1修改完成<br>
+获取性别为F的记录总数:
+5条记录
+sql：select count(*) from my_table where gender = 'F' LIMIT 1
 ------------------------------------------------
-获取10001号记录<br>
-10001 Georgi Mithril M<br>
+修改10001号记录的lastname='Mithril'
+1修改完成
+sql：update my_table set last_name='Mithril' where id = '10001'
 ------------------------------------------------
-插入1条记录<br>
+获取10001号记录
+sql：select * from my_table where id = 10001
+10001 Georgi Mithril M
 ------------------------------------------------
-获取10011号记录<br>
-10011 Smith William M<br>
+插入1条记录
+sql：insert into my_table (id, first_name, last_name, gender)values('10011', 'Smith', 'William', 'M')
 ------------------------------------------------
-删除10011号记录<br>
-删除1条记录<br>
+获取10011号记录
+sql：select * from my_table where id = 10011
+10011 Smith William M
 ------------------------------------------------
-获取10011号记录<br>
-object(my_table)[14]<br>
-  private 'id' => null<br>
-  private 'first_name' => null<br>
-  private 'last_name' => null<br>
-  private 'gender' => null<br>
+删除10011号记录
+删除1条记录
+sql：delete from my_table where id = '10011'
+------------------------------------------------
+获取10011号记录
+sql：select * from my_table where id = 10011
+/var/www/OrangeFrame/demo/controller/TastController.php:97:
+object(my_table)[10]
+  protected 'id' => null
+  protected 'first_name' => null
+  protected 'last_name' => null
+  protected 'gender' => null
 ------------------------------------------------

@@ -3,7 +3,7 @@
 defined('DS') ? null : define('DS', DIRECTORY_SEPARATOR);
 defined('SITE_ROOT') ? null : define('SITE_ROOT', dirname(__FILE__));
 defined('ROOT_PATH') ? null : define('ROOT_PATH', SITE_ROOT . DS);
-defined('RES_PATH') ? null : define('RES_PATH', '/var/www/pdp/');
+defined('RES_PATH') ? null : define('RES_PATH', '/var/www/OrangeFrame/');
 defined('DOMAIN') ? null : define('DOMAIN', 'pdp.test');
 
 //---redis-master

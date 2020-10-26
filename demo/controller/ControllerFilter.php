@@ -12,7 +12,7 @@ class ControllerFilter implements BaseFilter
      * MainDoFilter constructor.
      * @param BaseController $controller
      */
-    public function __construct($controller)
+    public function __construct(BaseController $controller)
     {
         $this->controller = $controller;
     }
@@ -23,7 +23,7 @@ class ControllerFilter implements BaseFilter
      * @param FilterChain $link
      * @return array|mixed|void
      */
-    function doFilter($data, $link)
+    function doFilter($data, FilterChain $link)
     {
         return $this->controller->Process();
     }

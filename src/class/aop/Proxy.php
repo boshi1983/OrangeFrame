@@ -65,8 +65,7 @@ class Proxy
     {
         //设置代理类名，成员函数，析构函数
         $class = 'final class '.$className.' implements ' . join(',', $arrInterface) . ' {
-private $target;
-private $handler;
+private $target;private $handler;
 function __destruct(){$this->target = null;$this->handler=null;}';
 
         //构造函数中的初始化内容
@@ -121,12 +120,7 @@ function __destruct(){$this->target = null;$this->handler=null;}';
                 $class .= '){';
 
                 //设置调用规则
-                $class .= 'try {
-    return $this->handler->invoke($this, $this->target, self::$m'.$k.', func_get_args());
-} catch (Exception $e) {
-    throw $e;
-} finally {
-}}';
+                $class .= 'return $this->handler->invoke($this, $this->target, self::$m'.$k.', func_get_args());}';
             }
         }
 
@@ -134,8 +128,8 @@ function __destruct(){$this->target = null;$this->handler=null;}';
         $class .= 'public function __construct($target, $handler){
 $this->target = $target;$this->handler = $handler;$classname = get_class($target);
 $reflection = null;
-try {$reflection = new \ReflectionClass($classname);} 
-catch (\Exception $exception) {}'.$methodConstruct.'}}';
+try {$reflection = new ReflectionClass($classname);} 
+catch (Exception $exception) {}'.$methodConstruct.'}}';
 
         //保存动态代理类文件
         if (self::$saveClassFile) {

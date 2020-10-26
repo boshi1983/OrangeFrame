@@ -214,7 +214,7 @@ abstract class Driver
      * @param bool $autoConnection
      * @return PDO
      */
-    public function &connect($config = [], $linkNum = 0, $autoConnection = false)
+    public function connect($config = [], $linkNum = 0, $autoConnection = false)
     {
         if (!isset($this->linkID[$linkNum])) {
             if (empty($config)) {
@@ -650,7 +650,7 @@ abstract class Driver
      * @param bool $fetchOne
      * @return bool|array
      */
-    public function &query(string $str, $fetchSql = false, $fetchOne = false)
+    public function query(string $str, $fetchSql = false, $fetchOne = false)
     {
         if (!empty($this->bind)) {
             $that = $this;
@@ -710,7 +710,7 @@ abstract class Driver
      * @param bool $fetchOne
      * @return array
      */
-    private function &getResult(string $key, $fetchOne = false)
+    private function getResult(string $key, $fetchOne = false)
     {
         if ($fetchOne) {
             $result = '';
@@ -932,7 +932,7 @@ abstract class Driver
      * @param string $key
      * @return string
      */
-    protected function parseKey(string &$key)
+    protected function parseKey(string $key)
     {
         return $key;
     }

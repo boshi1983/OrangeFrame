@@ -14,6 +14,7 @@ class TastController implements BaseController
         echo '获取5条记录<br>';
 
         $list = $this->myTable->getList(0, 5);
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
         foreach ($list as $row) {
             echo $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
         }
@@ -29,6 +30,7 @@ class TastController implements BaseController
         echo '使用in查询<br>';
 
         $list = $this->myTable->getListByIn([10001,10002,10003]);
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
         foreach ($list as $row) {
             echo $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
         }
@@ -37,6 +39,7 @@ class TastController implements BaseController
 
         echo '获取firstname=\'Tzvetan\'<br>';
         $list = $this->myTable->getPersonByFirstName('Tzvetan');
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
         foreach ($list as $row) {
             echo $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
         }
@@ -45,20 +48,24 @@ class TastController implements BaseController
 
         echo '获取记录总数:<br>';
         echo $this->myTable->getCount() . '条记录<br>';
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         echo '------------------------------------------------<br>';
 
         echo '获取性别为F的记录总数:<br>';
         echo $this->myTable->getCountByGender('F') . '条记录<br>';
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         echo '------------------------------------------------<br>';
 
         echo '修改10001号记录的lastname=\'Mithril\'<br>';
         echo $this->myTable->updateLastNameById(10001, 'Mithril').'修改完成<br>';
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         echo '------------------------------------------------<br>';
         echo '获取10001号记录<br>';
         $row = $this->myTable->getPersonById(10001);
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
         echo $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
 
         echo '------------------------------------------------<br>';
@@ -69,20 +76,24 @@ class TastController implements BaseController
         $row->setLastName('William');
         $row->setGender('M');
         echo '插入'.$this->myTable->insert($row).'条记录<br>';
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         echo '------------------------------------------------<br>';
         echo '获取10011号记录<br>';
         $row = $this->myTable->getPersonById(10011);
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
         echo $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
 
         echo '------------------------------------------------<br>';
 
         echo '删除10011号记录<br>';
         echo '删除' . $this->myTable->deleteById(10011) . '条记录<br>';
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         echo '------------------------------------------------<br>';
         echo '获取10011号记录<br>';
         $row = $this->myTable->getPersonById(10011);
+        echo 'sql：' . $this->myTable->getLastSql() . "<br>";
         var_dump($row);
 
         echo '------------------------------------------------<br>';

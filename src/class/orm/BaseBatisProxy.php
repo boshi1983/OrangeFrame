@@ -13,7 +13,7 @@ class BaseBatisProxy
      * @param string $sql
      * @return array|bool|string
      */
-    public function &query(string $sql) {
+    public function query(string $sql) {
         return $this->db->query($sql);
     }
 
@@ -38,5 +38,10 @@ class BaseBatisProxy
             $rt[] = str_replace('#{'.$item.'}', $v, $content);
         }
         return $open . join($separator, $rt) . $close;
+    }
+
+    public function getLastSql()
+    {
+        return $this->db->getLastSql();
     }
 }

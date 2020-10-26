@@ -42,6 +42,9 @@ class OrangeBatis
      * 驼峰命名转下划线命名
      * 思路:
      * 小写和大写紧挨一起的地方,加上分隔符,然后全部转小写
+     * @param $camelCaps
+     * @param string $separator
+     * @return string
      */
     public static function uncamelize($camelCaps, $separator='_')
     {
@@ -139,7 +142,7 @@ class OrangeBatis
         $obj = '';
         switch ($returnType->getName()) {
             case 'array':
-                $obj .= '$result = &$this->db->query($sql);' . PHP_EOL;
+                $obj .= '$result = $this->db->query($sql);' . PHP_EOL;
                 $obj .= '$list = [];' . PHP_EOL;
                 $obj .= 'if(is_array($result)) { foreach ($result as $row) {' . PHP_EOL;
                 $obj .= $this->row2Object($class, $value);
@@ -148,7 +151,7 @@ class OrangeBatis
                 $obj .= 'return $list;' . PHP_EOL;
                 break;
             default:
-                $obj .= $value . ' = &$this->db->get($sql);' . PHP_EOL;
+                $obj .= $value . ' = $this->db->get($sql);' . PHP_EOL;
                 $obj .= $this->row2Object($class, $value);
                 $obj .= 'return $obj;' . PHP_EOL;
                 break;
@@ -238,7 +241,7 @@ class OrangeBatis
      * @return array
      * @throws OrangeBatisException
      */
-    private function &parseXml($xmlName)
+    private function parseXml($xmlName)
     {
         $path = ROOT_PATH . self::$dirXml . self::uncamelize($xmlName) . '.xml';
         $mapper = simplexml_load_file($path);
@@ -294,7 +297,7 @@ class OrangeBatis
                         $funcs[] = $func;
                         ++$paramid;
                     } else {
-                        $sql .= ' ' . $data;
+                        $sql .= $data;
                     }
                 }
 
@@ -370,7 +373,7 @@ class OrangeBatis
      * @return string
      * @throws OrangeBatisException
      */
-    public function generateMethodContent($method, $paramList, $xmlNode)
+    public function generateMethodContent(ReflectionMethod $method, array $paramList, array $xmlNode)
     {
         $content = '';
         if (isset($xmlNode['funcs']) && is_array($xmlNode['funcs'])) {
@@ -433,11 +436,21 @@ class OrangeBatis
      * @param bool $bInstance
      * @return object|string
      * @throws OrangeBatisException
+     * @throws ReflectionException
      */
-    public static function getMapper($interFaceName, $bInstance = true)
+    public static function getMapper(string $interFaceName, $bInstance = true)
     {
         //去掉前缀i和后缀Dao
-        $xmlName = substr($interFaceName, 1, strlen($interFaceName) - 4);
+        //$xmlName = substr($interFaceName, 1, strlen($interFaceName) - 4);
+        $xmlName = '';
+        $partern = '/i([\w]+)Dao/';
+        if (preg_match_all($partern, $interFaceName, $result)) {
+            $xmlName = $result[1][0];
+        }
+
+        if (empty($xmlName)) {
+            throw new OrangeBatisException($interFaceName . ' is not match i*Dao!');
+        }
 
         $className = $xmlName . 'Proxy';
         $path = ROOT_PATH . self::$dirCompile . $className . '.php';

@@ -7,5 +7,5 @@ interface BaseFilter
      * @param FilterChain $link
      * @return mixed
      */
-    function doFilter($data, $link);
+    function doFilter($data, FilterChain $link);
 }

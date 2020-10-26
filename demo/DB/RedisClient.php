@@ -83,21 +83,21 @@ class RedisClient
      * @param string $tag master/slave
      * @return Redis
      */
-    public function &getRedis($tag = DemoDefine::REDIS_MASTER)
+    public function getRedis($tag = DemoDefine::REDIS_MASTER)
     {
         if (isset($this->linkHandle[$tag])) {
-            $this->_curRedis = &$this->linkHandle[$tag];
+            $this->_curRedis = $this->linkHandle[$tag];
             return $this->_curRedis;
         }
 
-        $this->_curRedis = &$this->linkHandle[DemoDefine::REDIS_MASTER];
+        $this->_curRedis = $this->linkHandle[DemoDefine::REDIS_MASTER];
         return $this->_curRedis;
     }
 
     /**
      * @return Redis
      */
-    public function &getCurrentRedis()
+    public function getCurrentRedis()
     {
         return $this->_curRedis;
     }
