@@ -1,3 +1,8 @@
+橘子PHP框架
+1.以AOP、IOC为主的php后端框架，内涵动态代理、责任链、单例等设计模式；
+2.其中ORM数据库对象映射OrangeBatis也是一大亮点。
+OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的配置xml文件，内部使用动态代理模式创建数据库访问类，对数据表字段和对象进行自动映射，让使用者更注重业务本身。
+
 目录及主要类介绍：<br>
 -db //测试数据库<br>
 -demo //测试环境<br>
