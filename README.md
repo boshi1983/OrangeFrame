@@ -58,7 +58,7 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 ------------------------------------------------
 以下为实例demo/controller/TastController的执行结果：<br>
 获取5条记录
-sql：select * from my_table limit 0, 5
+sql：select * from my_table limit :page, :pagecount
 10001 Georgi Facello M
 10002 Bezalel Simmel F
 10003 Parto Bamford M
@@ -75,7 +75,7 @@ sql：select * from my_table where id in (10001,10002,10003) order by id
 10003 Parto Bamford M
 ------------------------------------------------
 获取firstname='Tzvetan'
-sql：select * from my_table where first_name = 'Tzvetan'
+sql：select * from my_table where first_name = :firstName
 10007 Tzvetan Zielinski F
 ------------------------------------------------
 获取记录总数:
@@ -84,31 +84,31 @@ sql：select count(*) from my_table LIMIT 1
 ------------------------------------------------
 获取性别为F的记录总数:
 5条记录
-sql：select count(*) from my_table where gender = 'F' LIMIT 1
+sql：select count(*) from my_table where gender = :gender LIMIT 1
 ------------------------------------------------
 修改10001号记录的lastname='Mithril'
 1修改完成
-sql：update my_table set last_name='Mithril' where id = '10001'
+sql：update my_table set last_name=:lastName where id = :id
 ------------------------------------------------
 获取10001号记录
-sql：select * from my_table where id = 10001
+sql：select * from my_table where id = :id
 10001 Georgi Mithril M
 ------------------------------------------------
 插入1条记录
-sql：insert into my_table (id, first_name, last_name, gender)values('10011', 'Smith', 'William', 'M')
+sql：insert into my_table (id, first_name, last_name, gender)values(:id, :first_name, :last_name, :gender)
 ------------------------------------------------
 获取10011号记录
-sql：select * from my_table where id = 10011
+sql：select * from my_table where id = :id
 10011 Smith William M
 ------------------------------------------------
 删除10011号记录
 删除1条记录
-sql：delete from my_table where id = '10011'
+sql：delete from my_table where id = :id
 ------------------------------------------------
 获取10011号记录
-sql：select * from my_table where id = 10011
+sql：select * from my_table where id = :id
 /var/www/OrangeFrame/demo/controller/TastController.php:97:
-object(my_table)[10]
+object(my_table)[22]
   protected 'id' => null
   protected 'first_name' => null
   protected 'last_name' => null

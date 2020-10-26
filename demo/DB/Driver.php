@@ -368,7 +368,13 @@ abstract class Driver
      */
     public function bindParam(string $name, $value)
     {
-        $this->bind[':' . $name] = $value;
+        if (is_bool($value)) {
+            $this->bind[$name] = [$value, PDO::PARAM_BOOL];
+        } else if (is_float($value) || is_numeric($value)) {
+            $this->bind[$name] = [$value, PDO::PARAM_INT];
+        } else {
+            $this->bind[$name] = $value;
+        }
     }
 
     /**
@@ -393,12 +399,6 @@ abstract class Driver
             return false;
         }
         $this->queryStr = $str;
-        if (!empty($this->bind)) {
-            $that = $this;
-            $this->queryStr = strtr($this->queryStr, array_map(function ($val) use ($that) {
-                return '\'' . $that->escapeString($val) . '\'';
-            }, $this->bind));
-        }
         if ($fetchSql) {
             return $this->queryStr;
         }
@@ -652,17 +652,6 @@ abstract class Driver
      */
     public function query(string $str, $fetchSql = false, $fetchOne = false)
     {
-        if (!empty($this->bind)) {
-            $that = $this;
-            $str = strtr($str, array_map(function ($val) use ($that) {
-                if (is_numeric($val)) {
-                    return $val;
-                } else {
-                    return '\'' . $that->escapeString($val) . '\'';
-                }
-            }, $this->bind));
-        }
-
         if ($fetchSql) {
             return $str;
         }

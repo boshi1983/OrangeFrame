@@ -55,7 +55,7 @@ class BaseBatisProxy
         return $this->db->commit();
     }
 
-    public function bindParam(string $name, string $value)
+    public function bindParam(string $name, $value)
     {
         $this->db->bindParam($name, $value);
     }
