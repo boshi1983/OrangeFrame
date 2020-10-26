@@ -130,11 +130,12 @@ class OrangeBatis
     /**
      * 把查询出来的数据，赋值到对象
      * @param array $xmlNode xml节点
-     * @param ReflectionNamedType $returnType
+     * @param ReflectionType $returnType
+     * @param string $rtName
      * @return string
      * @throws OrangeBatisException
      */
-    private function setValue(array $xmlNode, ReflectionNamedType $returnType)
+    private function setValue(array $xmlNode, ReflectionType $returnType, string &$rtName)
     {
         $class = $xmlNode['resultType'];
 
@@ -142,18 +143,18 @@ class OrangeBatis
         $obj = '';
         switch ($returnType->getName()) {
             case 'array':
-                $obj .= '$result = $this->db->query($sql);' . PHP_EOL;
+                $obj .= '$result = $this->query($sql);' . PHP_EOL;
                 $obj .= '$list = [];' . PHP_EOL;
                 $obj .= 'if(is_array($result)) { foreach ($result as $row) {' . PHP_EOL;
                 $obj .= $this->row2Object($class, $value);
                 $obj .= '$list[] = $obj;' . PHP_EOL;
                 $obj .= '}}' . PHP_EOL;
-                $obj .= 'return $list;' . PHP_EOL;
+                $rtName = '$list';
                 break;
             default:
-                $obj .= $value . ' = $this->db->get($sql);' . PHP_EOL;
+                $obj .= $value . ' = $this->get($sql);' . PHP_EOL;
                 $obj .= $this->row2Object($class, $value);
-                $obj .= 'return $obj;' . PHP_EOL;
+                $rtName = '$obj';
                 break;
         }
 
@@ -199,7 +200,7 @@ class OrangeBatis
         $obj = '';
         if (strpos($sql, ':' . $varname) !== false) {
             $obj .= 'if (!is_null(' . $value . '->' . $methodName . '())) {' . PHP_EOL;
-            $obj .= '$this->db->bindParam(\'' . $varname . '\', ' . $value . '->' . $methodName . '());' . PHP_EOL;
+            $obj .= '$this->bindParam(\'' . $varname . '\', ' . $value . '->' . $methodName . '());' . PHP_EOL;
             $obj .= '}' . PHP_EOL;
         }
 
@@ -257,7 +258,8 @@ class OrangeBatis
                 $xmlContent = [
                     'id' => $id,
                     'tag' => $key,
-                    'resultType' => trim($value->attributes()['resultType'])
+                    'resultType' => trim($value->attributes()['resultType']),
+                    'transaction' => trim($value->attributes()['transaction'])
                 ];
                 $arr = explode("\n", trim($value));
                 if (count($arr) <= 1) {
@@ -309,6 +311,7 @@ class OrangeBatis
                     'id' => $id,
                     'tag' => $key,
                     'resultType' => trim($value->attributes()['resultType']),
+                    'transaction' => trim($value->attributes()['transaction']),
                     'sql' => trim($value)
                 ];
             }
@@ -376,6 +379,13 @@ class OrangeBatis
     public function generateMethodContent(ReflectionMethod $method, array $paramList, array $xmlNode)
     {
         $content = '';
+
+        $transaction = false;
+        if (isset($xmlNode['transaction']) && $xmlNode['transaction']) {
+            $transaction = true;
+            $content .= '$this->begin();';
+        }
+
         if (isset($xmlNode['funcs']) && is_array($xmlNode['funcs'])) {
             $content .= join('', $xmlNode['funcs']);
         }
@@ -384,12 +394,12 @@ class OrangeBatis
         foreach ($paramList as $param) {
             if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean', ''])) {
                 if (strpos($xmlNode['sql'], ':' . $param['name']) !== false) {
-                    $content .= '$this->db->bindParam(\'' . $param['name'] . '\', $' . $param['name'] . ');' . PHP_EOL;
+                    $content .= '$this->bindParam(\'' . $param['name'] . '\', $' . $param['name'] . ');' . PHP_EOL;
                 }
             } elseif (in_array($param['type'], ['array', 'object'])) {
                 $content .= 'foreach ($' . $param['name'] . ' as $key => $value) {' . PHP_EOL;
                 $content .= 'if (strpos($sql, \':\' . $key) !== false) {' . PHP_EOL;
-                $content .= '$this->db->bindParam($key, $value);' . PHP_EOL;
+                $content .= '$this->bindParam($key, $value);' . PHP_EOL;
                 $content .= '}' . PHP_EOL;
                 $content .= '}' . PHP_EOL;
             } else {
@@ -397,15 +407,23 @@ class OrangeBatis
             }
         }
 
+        $rtName = '$rt';
         if ($xmlNode['tag'] == 'select') {
             if ($method->getReturnType()->getName() == 'int') {
-                $content .= 'return $this->db->getOne($sql);' . PHP_EOL;
+                $content .= ($transaction?'$rt =':'return') . ' $this->getOne($sql);' . PHP_EOL;
             } else {
-                $content .= $this->setValue($xmlNode, $method->getReturnType());
+                $content .= $this->setValue($xmlNode, $method->getReturnType(), $rtName);
+                if (!$transaction) {
+                    $content .= 'return ' . $rtName . ';' . PHP_EOL;
+                }
             }
         } else {
             //update, insert, delete
-            $content .= 'return $this->db->execute($sql);' . PHP_EOL;
+            $content .= ($transaction?'$rt =':'return') . ' $this->execute($sql);' . PHP_EOL;
+        }
+
+        if ($transaction) {
+            $content .= '$this->commit();return '.$rtName.';';
         }
 
         return $content;

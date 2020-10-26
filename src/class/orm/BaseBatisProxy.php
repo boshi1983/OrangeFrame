@@ -44,4 +44,29 @@ class BaseBatisProxy
     {
         return $this->db->getLastSql();
     }
+
+    public function begin()
+    {
+        $this->db->startTrans();
+    }
+
+    public function commit()
+    {
+        return $this->db->commit();
+    }
+
+    public function bindParam(string $name, string $value)
+    {
+        $this->db->bindParam($name, $value);
+    }
+
+    public function getOne(string $sql)
+    {
+        return $this->db->getOne($sql);
+    }
+
+    public function get($sql)
+    {
+        return $this->db->get($sql);
+    }
 }

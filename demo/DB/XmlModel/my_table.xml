@@ -26,7 +26,7 @@
     <insert id="insert">
         insert into my_table (id, first_name, last_name, gender)values(:id, :first_name, :last_name, :gender)
     </insert>
-    <update id="updateLastNameById">
+    <update id="updateLastNameById" transaction="true">
         update my_table set last_name=:lastName where id = :id
     </update>
     <delete id="deleteById">
