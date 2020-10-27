@@ -26,6 +26,10 @@ class OrangeBatis
      * 思路:
      * step1.原字符串转小写,原字符串中的分隔符用空格替换,在字符串开头加上分隔符
      * step2.将字符串中每个单词的首字母转换为大写,再去空格,去字符串首部附加的分隔符.
+     * @param $uncamelized_words
+     * @param string $separator
+     * @param false $firstup
+     * @return string
      */
     public static function camelize($uncamelized_words,$separator='_', $firstup = false)
     {
@@ -453,7 +457,7 @@ class OrangeBatis
      * @param bool $bInstance
      * @return object|string
      * @throws OrangeBatisException
-     * @throws ReflectionException
+     * @throws OrangeBatisException
      */
     public static function getMapper(string $interFaceName, $bInstance = true)
     {
