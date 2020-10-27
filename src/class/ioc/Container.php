@@ -44,7 +44,7 @@ class Container
 
         $partern = '/i([\w]+)Dao/';
         if (preg_match_all($partern, $name, $result)) {
-            $batisClassName = OrangeBatis::getMapper($result[0][0], false);
+            $batisClassName = OrangeBatis::getMapper($result[0][0]);
             $reflection = new ReflectionClass($batisClassName);
         } else {
             $reflection = new ReflectionClass($name);
@@ -116,10 +116,10 @@ class Container
                 //区分数据访问层
                 $partern = '/i([\w]+)Dao/';
                 if (preg_match($partern, $value)) {
-                    $object->{$key} = OrangeBatis::getMapper($value);
-                } else {
-                    $object->{$key} = $this->get($value);
+                    $value = OrangeBatis::getMapper($value);
                 }
+
+                $object->{$key} = $this->get($value);
             }
         }
         return $object;

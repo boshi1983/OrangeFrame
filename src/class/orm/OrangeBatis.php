@@ -454,12 +454,11 @@ class OrangeBatis
 
     /**
      * @param string $interFaceName
-     * @param bool $bInstance
      * @return object|string
      * @throws OrangeBatisException
      * @throws OrangeBatisException
      */
-    public static function getMapper(string $interFaceName, $bInstance = true)
+    public static function getMapper(string $interFaceName)
     {
         //去掉前缀i和后缀Dao
         //$xmlName = substr($interFaceName, 1, strlen($interFaceName) - 4);
@@ -485,11 +484,6 @@ class OrangeBatis
             require_once $path;
         }
 
-        if ($bInstance) {
-            return Container::getObj($className);
-        } else {
-            return $className;
-        }
-
+        return $className;
     }
 }
