@@ -33,6 +33,17 @@ class RedisClient
         $this->initRedis($configs);
     }
 
+    public function __destruct()
+    {
+        foreach ($this->linkHandle as $redis) {
+            if (!empty($redis)) {
+                $redis->close();
+            }
+        }
+        $this->linkHandle = null;
+    }
+
+
     /**
      * 初始化Redis
      * @param $conf

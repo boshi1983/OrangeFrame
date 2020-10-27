@@ -1,23 +1,26 @@
 <?php
 
 
-class BaseServer
+class BaseServer extends Container
 {
-    protected $_container;
-
     /**
      * BaseServer constructor.
      */
     public function __construct()
     {
-        $this->_container = Container::instance();
+        parent:: __construct();
         $this->init();
+    }
+
+    public function __destruct()
+    {
     }
 
     protected function init()
     {
         $this->connectMysql();
         $this->connectRedis();
+        $this->set('server', $this);
     }
 
     protected function connectMysql()
@@ -41,7 +44,7 @@ class BaseServer
             'db_like_fields' => '',
         ];
 
-        $this->_container->set('Mysql', new Mysql($config));
+        $this->set('Mysql', new Mysql($config));
     }
 
     protected function connectRedis()
@@ -58,7 +61,7 @@ class BaseServer
         $redisHandler = new RedisClient($config);
         $redis = $redisHandler->getRedis(DemoDefine::REDIS_MASTER);
         if (!empty($redis)) {
-            $this->_container->set('RedisModel', $redisHandler);
+            $this->set('RedisModel', $redisHandler);
         }
     }
 }

@@ -21,7 +21,6 @@ class OrangeBatis
     {
     }
 
-
     /**
      * 下划线转驼峰
      * 思路:
@@ -483,7 +482,7 @@ class OrangeBatis
         }
 
         if ($bInstance) {
-            return Container::instance()->get($className);
+            return Container::getObj($className);
         } else {
             return $className;
         }

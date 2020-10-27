@@ -9,7 +9,7 @@ class WebServer extends BaseServer
     public function run()
     {
         //创建测试控制器
-        $controller = $this->_container->get('TastController');
+        $controller = $this->get('TastController');
 
         //创建控制器责任链节点
         $controllerFilter = new ControllerFilter($controller);
@@ -33,12 +33,14 @@ class WebServer extends BaseServer
         $link = new FilterChain();
 
         //增加json过滤器
-        //$link->add(new JsonFilter());
+        if (DemoDefine::isAjax() || DemoDefine::isPost()) {
+            $link->add(new JsonFilter());
+        }
 
         //设置主代理
         $link->add($proxy);
 
         //执行责任链
-        $link->doFilter([]);
+        echo $link->doFilter('{}');
     }
 }

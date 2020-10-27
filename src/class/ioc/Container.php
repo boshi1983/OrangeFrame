@@ -2,17 +2,15 @@
 
 class Container
 {
+    private static $instence;
     /**
-     * @return Container
+     * @param string $name
+     * @return object
      */
-    public static function instance()
-    {
-        static $instance;
-        if (!$instance) {
-            $instance = new self();
-        }
-        return $instance;
+    public static function getObj(string $name) : object {
+        return self::$instence->get($name);
     }
+
     /**
      * @var array
      */
@@ -29,6 +27,7 @@ class Container
     function __construct()
     {
         $this->parser = new DocParser();
+        self::$instence = $this;
     }
 
     /**
