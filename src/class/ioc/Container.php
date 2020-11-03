@@ -22,11 +22,17 @@ class Container
     private $parser;
 
     /**
+     * @var OrangeBatis
+     */
+    private $orangeBatis;
+
+    /**
      * Container constructor.
      */
     function __construct()
     {
         $this->parser = new DocParser();
+        $this->orangeBatis = new OrangeBatis($this->parser);
         self::$instence = $this;
     }
 
@@ -44,7 +50,7 @@ class Container
 
         $partern = '/i([\w]+)Dao/';
         if (preg_match_all($partern, $name, $result)) {
-            $batisClassName = OrangeBatis::getMapper($result[0][0]);
+            $batisClassName = $this->orangeBatis->getMapper($result[0][0]);
             $reflection = new ReflectionClass($batisClassName);
         } else {
             $reflection = new ReflectionClass($name);
@@ -116,7 +122,7 @@ class Container
                 //区分数据访问层
                 $partern = '/i([\w]+)Dao/';
                 if (preg_match($partern, $value)) {
-                    $value = OrangeBatis::getMapper($value);
+                    $value = $this->orangeBatis->getMapper($value);
                 }
 
                 $object->{$key} = $this->get($value);

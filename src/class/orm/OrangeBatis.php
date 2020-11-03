@@ -17,9 +17,20 @@ class OrangeBatis
      */
     private $reflectionList = [];
 
-    private function __construct()
+    /**
+     * @var DocParser
+     */
+    private $parser;
+
+    /**
+     * OrangeBatis constructor.
+     * @param DocParser $parser
+     */
+    public function __construct(DocParser $parser)
     {
+        $this->parser = $parser;
     }
+
 
     /**
      * 下划线转驼峰
@@ -183,11 +194,44 @@ class OrangeBatis
                 continue;
 
             $varname = self::uncamelize(substr($name, 3));
-            $obj .= '$obj->' . $name . '(' . $value . '[\'' . $varname . '\']??\'\');' . PHP_EOL;
+            $obj .= '$obj->' . $name . '(' . $value . '[\'' . $varname . '\']??'.$this->getDefaultByPropertyType($reflection, $varname).');' . PHP_EOL;
         }
         $obj .= '}' . PHP_EOL;
 
         return $obj;
+    }
+
+
+    /**
+     * @param ReflectionClass $reflection
+     * @throws ReflectionException
+     */
+    private function getDefaultByPropertyType(ReflectionClass $reflection, string $name)
+    {
+        $property = $reflection->getProperty($name);
+        if (empty($property)) {
+            return '\'\'';
+        }
+        $doc = $property->getDocComment();
+        if (empty($doc)) {
+            return '\'\'';
+        }
+
+        $anotations = $this->parser->parse($doc);
+        if (empty($anotations) || !isset($anotations['var'])) {
+            return '\'\'';
+        }
+
+        switch ($anotations['var']) {
+            case 'int':
+            case 'float':
+                return 0;
+            case 'array':
+                return '[]';
+            case 'string':
+            default:
+                return '\'\'';
+        }
     }
 
     /**
@@ -458,7 +502,7 @@ class OrangeBatis
      * @throws OrangeBatisException
      * @throws OrangeBatisException
      */
-    public static function getMapper(string $interFaceName)
+    public function getMapper(string $interFaceName)
     {
         //去掉前缀i和后缀Dao
         //$xmlName = substr($interFaceName, 1, strlen($interFaceName) - 4);
@@ -478,7 +522,7 @@ class OrangeBatis
 
         if (self::$forceCompile || !file_exists($path) || !self::checkFileTime($path, $xml)) {
             //强制编译 或者 编译文件不存在
-            (new OrangeBatis())->generatedClass($interFaceName);
+            $this->generatedClass($interFaceName);
         } else {
             /** @noinspection PhpIncludeInspection */
             require_once $path;

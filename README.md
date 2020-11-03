@@ -54,7 +54,7 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 3.创建DAO操作接口，接口类命名规则：1）小写i起始；2）驼峰式命名方式的表名；3）Dao结尾。这里需要注意，如果传入的参数为对象，需要主动声明；<br>
 4.创建xml，使用表名命名xml的文件名，其中按照示例给出的格式：<br>
 节点tag（select、insert、update、delete）；id（接口名）；resultType（返回类型）；sql语句.<br>
-5.使用OrangeBatis::getMapper(类名);或者使用ioc注入方式创建；<br>
+5.使用ioc注入方式创建，在标注成员变量的Doc时，使用@inject 类名 即可动态注入；<br>
 ------------------------------------------------
 以下为实例demo/controller/TastController的执行结果：<br>
 获取5条记录
