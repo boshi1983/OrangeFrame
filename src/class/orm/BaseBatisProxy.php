@@ -40,9 +40,14 @@ class BaseBatisProxy
         return $open . join($separator, $rt) . $close;
     }
 
-    public function getLastSql()
+    public function getLastInsID()
     {
-        return $this->db->getLastSql();
+        return $this->db->getLastInsID();
+    }
+
+    public function getLastSql():int
+    {
+        return intval($this->db->getLastSql());
     }
 
     public function begin()
@@ -50,7 +55,7 @@ class BaseBatisProxy
         $this->db->startTrans();
     }
 
-    public function commit()
+    public function commit():bool
     {
         return $this->db->commit();
     }

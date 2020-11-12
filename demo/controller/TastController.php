@@ -59,12 +59,12 @@ class TastController implements BaseController
 
         $rtStr .= '------------------------------------------------<br>';
 
-        $rtStr .= '修改10001号记录的lastname=\'Mithril\'<br>';
+        $rtStr .= '修改10001号记录的lastname=\'Mithril\' 支持事物<br>';
         $rtStr .= $this->myTable->updateLastNameById(10001, 'Mithril').'修改完成<br>';
         $rtStr .= 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         $rtStr .= '------------------------------------------------<br>';
-        $rtStr .= '获取10001号记录<br>';
+        $rtStr .= '获取10001号记录，返回值支持null<br>';
         $row = $this->myTable->getPersonById(10001);
         $rtStr .= 'sql：' . $this->myTable->getLastSql() . "<br>";
         $rtStr .= $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";

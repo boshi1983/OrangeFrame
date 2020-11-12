@@ -66,12 +66,16 @@ class OrangeBatis
     }
 
     /**
-     * @param string $className
+     * @param ReflectionType $className
      * @return string
      */
-    private function getClassShortName(string $className)
+    private function getClassShortName(ReflectionType $type)
     {
-        return basename(str_replace('\\', '/', $className));
+        $rt = '';
+        if ($type->allowsNull()) {
+            $rt .= '?';
+        }
+        return $rt . basename(str_replace('\\', '/', $type-> getName()));
     }
 
     /**
@@ -149,8 +153,12 @@ class OrangeBatis
      * @return string
      * @throws OrangeBatisException
      */
-    private function setValue(array $xmlNode, ReflectionType $returnType, string &$rtName)
+    private function setValue(array $xmlNode, ?ReflectionType $returnType, string &$rtName)
     {
+        if (empty($returnType)) {
+            return '';
+        }
+
         $class = $xmlNode['resultType'];
 
         $value = '$row';
@@ -387,7 +395,7 @@ class OrangeBatis
 
             $type = $parameter->getType();
             if (!is_null($type)) {
-                $className = $this->getClassShortName($type->getName());
+                $className = $this->getClassShortName($type);
                 $paramStr .= $className . ' ';
 
                 $param['type'] = $className;
@@ -405,7 +413,7 @@ class OrangeBatis
         $function .= ')';
         $return = $method->getReturnType();
         if (!is_null($return)) {
-            $function .= ':' . $this->getClassShortName($return->getName());
+            $function .= ':' . $this->getClassShortName($return);
         }
 
         $function .= '{' . PHP_EOL;
@@ -430,7 +438,7 @@ class OrangeBatis
         $transaction = false;
         if (isset($xmlNode['transaction']) && $xmlNode['transaction']) {
             $transaction = true;
-            $content .= '$this->begin();';
+            $content .= '$this->begin();' . PHP_EOL;
         }
 
         if (isset($xmlNode['funcs']) && is_array($xmlNode['funcs'])) {
@@ -455,22 +463,53 @@ class OrangeBatis
         }
 
         $rtName = '$rt';
-        if ($xmlNode['tag'] == 'select') {
-            if ($method->getReturnType()->getName() == 'int') {
-                $content .= ($transaction?'$rt =':'return') . ' $this->getOne($sql);' . PHP_EOL;
-            } else {
-                $content .= $this->setValue($xmlNode, $method->getReturnType(), $rtName);
-                if (!$transaction) {
-                    $content .= 'return ' . $rtName . ';' . PHP_EOL;
+
+        $methodReturnType = null;
+        if (!empty($method->getReturnType())) {
+            $methodReturnType = $method->getReturnType()->getName();
+        }
+
+        switch ($xmlNode['tag'])
+        {
+            case 'select':
+                switch ($methodReturnType) {
+                    case 'int':
+                        $content .= ($transaction?'$rt =':'return') . ' intval($this->getOne($sql));' . PHP_EOL;
+                        break;
+                    case 'string':
+                        $content .= ($transaction?'$rt =':'return') . ' \'\' . $this->getOne($sql);' . PHP_EOL;
+                        break;
+                    case 'float':
+                        $content .= ($transaction?'$rt =':'return') . ' floatval($this->getOne($sql));' . PHP_EOL;
+                        break;
+                    default:
+                        $content .= $this->setValue($xmlNode, $method->getReturnType(), $rtName);
+                        if (!$transaction) {
+                            $content .= 'return ' . $rtName . ';' . PHP_EOL;
+                        }
+                        break;
                 }
-            }
-        } else {
-            //update, insert, delete
-            $content .= ($transaction?'$rt =':'return') . ' $this->execute($sql);' . PHP_EOL;
+                break;
+            case 'insert':
+                $content .= '$this->execute($sql);' . PHP_EOL;
+                $content .= ($transaction?'$rt =':'return') . ' $this->getLastInsID();' . PHP_EOL;
+                break;
+            default:
+                //update, delete
+                $content .= ($transaction?'$rt =':'return') . ' $this->execute($sql);' . PHP_EOL;
+                break;
         }
 
         if ($transaction) {
-            $content .= '$this->commit();return '.$rtName.';';
+            $content .= 'return $this->commit()? '.$rtName.' : ';
+
+            switch ($methodReturnType) {
+                case 'int':$content .= '0;';break;
+                case 'float':$content .= '0.0;';break;
+                case 'array':$content .= '[];';break;
+                case '':case 'string':$content .= '\'\';';break;
+                default:$content .= 'null;';break;
+            }
         }
 
         return $content;
