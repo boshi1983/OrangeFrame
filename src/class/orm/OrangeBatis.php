@@ -147,19 +147,19 @@ class OrangeBatis
 
     /**
      * 把查询出来的数据，赋值到对象
-     * @param array $xmlNode xml节点
+     * @param XmlNode $xmlNode xml节点
      * @param ReflectionType $returnType
      * @param string $rtName
      * @return string
      * @throws OrangeBatisException
      */
-    private function setValue(array $xmlNode, ?ReflectionType $returnType, string &$rtName)
+    private function setValue(XmlNode $xmlNode, ?ReflectionType $returnType, string &$rtName)
     {
         if (empty($returnType)) {
             return '';
         }
 
-        $class = $xmlNode['resultType'];
+        $class = $xmlNode->getResultType();
 
         $value = '$row';
         $obj = '';
@@ -310,12 +310,8 @@ class OrangeBatis
 
             $id = trim($value->attributes()['id']);
             if ($value->children()->count() > 0) {
-                $xmlContent = [
-                    'id' => $id,
-                    'tag' => $key,
-                    'resultType' => trim($value->attributes()['resultType']),
-                    'transaction' => trim($value->attributes()['transaction'])
-                ];
+                $xmlContent = new XmlNode($id, $key, trim($value->attributes()['resultType']), $value->attributes()['transaction']);
+
                 $arr = explode("\n", trim($value));
                 if (count($arr) <= 1) {
                     $arr[] = '';
@@ -358,18 +354,13 @@ class OrangeBatis
                     }
                 }
 
-                $xmlContent['funcs'] = $funcs;
-                $xmlContent['sql'] = $sql;
-                $xmlContents[$id] = $xmlContent;
+                $xmlContent->setFunc($funcs);
+                $xmlContent->setSql($sql);
             } else {
-                $xmlContents[$id] = [
-                    'id' => $id,
-                    'tag' => $key,
-                    'resultType' => trim($value->attributes()['resultType']),
-                    'transaction' => trim($value->attributes()['transaction']),
-                    'sql' => trim($value)
-                ];
+                $xmlContent = new XmlNode($id, $key, trim($value->attributes()['resultType']), $value->attributes()['transaction']);
+                $xmlContent->setSql(trim($value));
             }
+            $xmlContents[$id] = $xmlContent;
         }
 
         return $xmlContents;
@@ -378,11 +369,11 @@ class OrangeBatis
     /**
      * 生成ORM操作方法
      * @param ReflectionMethod $method
-     * @param array $xmlNode
+     * @param XmlNode $xmlNode
      * @return string
      * @throws OrangeBatisException
      */
-    private function generateMethod(ReflectionMethod $method, array $xmlNode)
+    private function generateMethod(ReflectionMethod $method, XmlNode $xmlNode)
     {
         $function = 'public function ' . $method->getName() . '(';
 
@@ -427,28 +418,28 @@ class OrangeBatis
      * 生成操作方法体
      * @param $method
      * @param $paramList
-     * @param $xmlNode
+     * @param XmlNode $xmlNode
      * @return string
      * @throws OrangeBatisException
      */
-    public function generateMethodContent(ReflectionMethod $method, array $paramList, array $xmlNode)
+    public function generateMethodContent(ReflectionMethod $method, array $paramList, XmlNode $xmlNode)
     {
         $content = '';
 
         $transaction = false;
-        if (isset($xmlNode['transaction']) && $xmlNode['transaction']) {
+        if ($xmlNode->getTransaction()) {
             $transaction = true;
             $content .= '$this->begin();' . PHP_EOL;
         }
 
-        if (isset($xmlNode['funcs']) && is_array($xmlNode['funcs'])) {
-            $content .= join('', $xmlNode['funcs']);
+        if (is_array($xmlNode->getFunc())) {
+            $content .= join('', $xmlNode->getFunc());
         }
-        $content .= '$sql = \'' . $xmlNode['sql'] . '\';' . PHP_EOL;
+        $content .= '$sql = \'' . $xmlNode->getSql() . '\';' . PHP_EOL;
 
         foreach ($paramList as $param) {
             if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean', ''])) {
-                if (strpos($xmlNode['sql'], ':' . $param['name']) !== false) {
+                if (strpos($xmlNode->getSql(), ':' . $param['name']) !== false) {
                     $content .= '$this->bindParam(\'' . $param['name'] . '\', $' . $param['name'] . ');' . PHP_EOL;
                 }
             } elseif (in_array($param['type'], ['array', 'object'])) {
@@ -458,7 +449,7 @@ class OrangeBatis
                 $content .= '}' . PHP_EOL;
                 $content .= '}' . PHP_EOL;
             } else {
-                $content .= $this->getValue('$' . $param['name'], $param['type'], $xmlNode['sql']) . PHP_EOL;
+                $content .= $this->getValue('$' . $param['name'], $param['type'], $xmlNode->getSql()) . PHP_EOL;
             }
         }
 
@@ -469,7 +460,7 @@ class OrangeBatis
             $methodReturnType = $method->getReturnType()->getName();
         }
 
-        switch ($xmlNode['tag'])
+        switch ($xmlNode->getTag())
         {
             case 'select':
                 switch ($methodReturnType) {
