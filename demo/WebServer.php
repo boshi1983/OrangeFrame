@@ -9,7 +9,10 @@ class WebServer extends BaseServer
     public function run()
     {
         //创建测试控制器
-        $controller = $this->get('TastController');
+        /**
+         * @var $controller TestController
+         */
+        $controller = $this->get('TestController');
 
         //创建控制器责任链节点
         $controllerFilter = new ControllerFilter($controller);

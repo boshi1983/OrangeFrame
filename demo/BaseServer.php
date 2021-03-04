@@ -44,7 +44,8 @@ class BaseServer extends Container
             'db_like_fields' => '',
         ];
 
-        $this->set('Mysql', new Mysql($config));
+        $mysql = $this->get('Mysql');
+        $mysql->setConfig($config);
     }
 
     protected function connectRedis()

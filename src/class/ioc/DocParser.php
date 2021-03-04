@@ -99,19 +99,21 @@ class DocParser
      */
     private function setParam($param, $value)
     {
-        if ($param == 'param' || $param == 'return')
+        if ($param == 'param' || $param == 'return') {
             $value = $this->formatParamOrReturn($value);
-        if ($param == 'class')
+        }
+        if ($param == 'class') {
             list ($param, $value) = $this->formatClass($value);
+        }
 
         if (empty ($this->params [$param])) {
             $this->params [$param] = $value;
         } else if ($param == 'param') {
-            $arr = array(
-                $this->params [$param],
-                $value
-            );
-            $this->params [$param] = $arr;
+            if (is_array($this->params [$param])) {
+                $this->params [$param][] = $value;
+            } else {
+                $this->params [$param] = [$this->params [$param], $value];
+            }
         } else {
             $this->params [$param] = $value + $this->params [$param];
         }
@@ -124,7 +126,7 @@ class DocParser
      */
     private function formatClass($value)
     {
-        $r = preg_split("[|]", $value);
+        $r = explode('|', $value);
         if (is_array($r)) {
             $param = $r [0];
             parse_str($r [1], $value);
@@ -136,10 +138,7 @@ class DocParser
         } else {
             $param = 'Unknown';
         }
-        return array(
-            $param,
-            $value
-        );
+        return [$param, $value];
     }
 
     /**
@@ -148,9 +147,39 @@ class DocParser
      */
     private function formatParamOrReturn($string)
     {
-        $pos = strpos($string, ' ');
+        $arr = explode(' ', $string);
+        switch (count($arr)) {
+            case 2:
+            {
+                /**
+                 * @var boolean
+                 */
+                $type = $arr[0];
+                switch ($type) {
+                    case 'int':
+                    case 'integer':
+                        $type = 'intval';
+                        break;
+                    case 'float':
+                        $type .= 'val';break;
+                    case 'double':
+                        $type .= 'val';break;
+                    case 'bool':
+                    case 'boolean':
+                        $type = 'boolval';break;
+                    case 'string':
+                        $type = 'strval';break;
+                }
+                $value = $type($arr[1]);
+                return defined($value)?constant($value):$value;
+            }
+            default:
+            {
+                $pos = strpos($string, ' ');
 
-        $type = substr($string, 0, $pos);
-        return '(' . $type . ')' . substr($string, $pos + 1);
+                $type = substr($string, 0, $pos);
+                return '(' . $type . ')' . substr($string, $pos + 1);
+            }
+        }
     }
 }

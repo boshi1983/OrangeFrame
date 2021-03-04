@@ -42,10 +42,11 @@ class Container
      * @return object
      * @throws ReflectionException|OrangeBatisException
      */
-    public function get(string $name) : object
+    public function get(string $name, array $params = []) : object
     {
-        if (isset($this->cache[$name])) {
-            return $this->cache[$name];
+        $key = md5($name . var_export(empty($params)?[]:$params, true));
+        if (isset($this->cache[$key])) {
+            return $this->cache[$key];
         }
 
         $partern = '/i([\w]+)Dao/';
@@ -57,10 +58,10 @@ class Container
         }
 
         $depends = $this->getDependency($reflection);
-        $this->cache[$name] = $this->createObject($reflection, $depends);
+        $this->cache[$key] = $this->createObject($reflection, $depends, $params);
         unset($reflection);
         unset($depends);
-        return $this->cache[$name];
+        return $this->cache[$key];
     }
 
     /**
@@ -87,7 +88,7 @@ class Container
      * @param $reflection ReflectionClass
      * @return array
      */
-    public function getDependency(ReflectionClass $reflection)
+    private function getDependency(ReflectionClass $reflection)
     {
         if(empty($reflection)) {
             return null;
@@ -98,8 +99,11 @@ class Container
         foreach ($props as $prop) {
             $str = $prop->getDocComment();
             $anotations = $this->parser->parse($str);
-            if (isset($anotations['inject'])) {
-                $depends[$prop->getName()] = $anotations['inject'];
+            if (isset($anotations['inject']) && !empty($anotations['inject'])) {
+                $depends[$prop->getName()] = [
+                    'class' => $anotations['inject'],
+                    'param' => $anotations['param'] ?? []
+                ];
             }
             unset($anotations);
         }
@@ -111,21 +115,26 @@ class Container
      * 实例化对象的方法
      * @param $instance ReflectionClass
      * @param $depends array( 'field' => 'Class' ),  field 为注入的变量名，class为注入的类
+     * @param $params array
      * @return object
-     * @throws OrangeBatisException|ReflectionException
+     * @throws OrangeBatisException
+     * @throws ReflectionException
      */
-    public function createObject(ReflectionClass $instance, array $depends)
+    public function &createObject(ReflectionClass $instance, array $depends, array $params = [])
     {
-        $object = $instance->newInstanceArgs([]);
+        $object = $instance->newInstanceArgs($params);
         if (!empty($depends)) {
             foreach ($depends as $key => $value) {
+
+                $class = $value['class'];
+                $subparam = $value['param'] ?? [];
+
                 //区分数据访问层
                 $partern = '/i([\w]+)Dao/';
-                if (preg_match($partern, $value)) {
-                    $value = $this->orangeBatis->getMapper($value);
+                if (preg_match($partern, $class)) {
+                    $class = $this->orangeBatis->getMapper($class);
                 }
-
-                $object->{$key} = $this->get($value);
+                $object->{$key} = $this->get($class, $subparam);
             }
         }
         return $object;

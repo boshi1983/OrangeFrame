@@ -79,13 +79,7 @@ abstract class Driver
 
     //------------------------------------------------------------------------------------
 
-    /**
-     * 架构函数 读取数据库配置信息
-     * @access public
-     * @param array|string $config 数据库配置数组
-     */
-    public function __construct($config = '')
-    {
+    public function setConfig($config = '') {
         if (!empty($config)) {
             $this->config = array_merge($this->config, $config);
             if (is_array($this->config['params'])) {
@@ -93,8 +87,6 @@ abstract class Driver
             }
         }
     }
-
-    //------------------------------------------------------------------------------------
 
     /**
      * @param $field
@@ -661,7 +653,9 @@ abstract class Driver
 
         $this->queryStr = $str;
         $this->initConnect(false);
-        if (!$this->_linkID) return $result;
+        if (!$this->_linkID) {
+            return $result;
+        }
         //释放前次的查询结果
         if (!empty($this->PDOStatement)) $this->free();
         ++$this->queryTimes;
@@ -670,6 +664,7 @@ abstract class Driver
         $this->debug(true);
         $this->PDOStatement = $this->_linkID->prepare($str);
         if (false === $this->PDOStatement) {
+            echo 'fjdskjaslfdk';
             $this->error();
             return $result;
         }
@@ -686,6 +681,7 @@ abstract class Driver
         $this->debug(false);
 
         if (false === $result) {
+            echo 'fjdskjaslfdk';
             $this->error();
             return $result;
         } else {

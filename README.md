@@ -40,11 +40,15 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 3.责任链模式可以细化数据处理的粒度，也是AOP切面编程的一种运用。
 ------------------------------------------------
 三.IOC<br>
-1.使用ioc创建的类是全局单例模式；
-2.创建单例时，暂时无法解析构造函数的参数，请使用无参构造函数。
+1.使用ioc创建的类是全局单例模式<font color="#dd0000">（参数相同）</font>；
+2.创建单例时，暂时无法解析构造函数的参数，请使用无参构造函数；
 3.把需要ioc注入的变量设置成类的成员变量；
 4.用@inject 类名设置这个成员变量的doc；
 5.使用Container::instance()->get(类名);创建类实例；
+<font color="#dd0000">6.支持@param参数，在注入时，添加自定义参数，[格式：@param 类型 值]；
+7.@param参数，按照从上到下的顺序依次注入到类构造函数中，请注意顺序；
+8.当@param参数值不同(包括类型和顺序)，注入的类实例也会不一样。
+</font>
 这样该实例中声明了@inject的成员变量都想被自动创建
 ------------------------------------------------
 四.ORM<br>
@@ -57,6 +61,9 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 5.使用ioc注入方式创建，在标注成员变量的Doc时，使用@inject 类名 即可动态注入；<br>
 ------------------------------------------------
 以下为实例demo/controller/TastController的执行结果：<br>
+带参数的依赖注入的类实例TestManager->show()
+string：5; integer：测试注入的字符串参数; const：this string is defined text
+------------------------------------------------
 获取5条记录
 sql：select * from my_table limit :page, :pagecount
 10001 Georgi Facello M

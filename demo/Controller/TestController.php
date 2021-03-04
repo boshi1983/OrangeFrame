@@ -1,7 +1,8 @@
 <?php
 
+defined('TEST_CONST') ? null : define('TEST_CONST', 'this string is defined text');
 
-class TastController implements BaseController
+class TestController implements BaseController
 {
     /**
      * @inject iMyTableDao
@@ -9,9 +10,32 @@ class TastController implements BaseController
      */
     public $myTable;
 
+    /**
+     * @inject TestManager
+     * @var TestManager
+     * @param string 测试注入的字符串参数
+     * @param int 5
+     * @param string TEST_CONST
+     */
+    public $testManager;
+
+    /**
+     * @inject TestManager
+     * @var TestManager
+     * @param string 测试注入的字符串参数
+     * @param int 6
+     * @param string TEST_CONST
+     */
+    public $testManager1;
+
     public function Process() {
 
-        $rtStr = '';
+        $rtStr = '带参数的依赖注入的类实例TestManager->show()<br>';
+
+        $rtStr .= $this->testManager->show() . '<br>';
+        $rtStr .= $this->testManager1->show() . '<br>';
+
+        $rtStr .= '------------------------------------------------<br>';
         $rtStr .= '获取5条记录<br>';
 
         $list = $this->myTable->getList(0, 5);

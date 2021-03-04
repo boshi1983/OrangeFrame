@@ -14,7 +14,8 @@ class AutoLoad
 {
     static $pathArr = [
         DS . 'demo' . DS,
-        DS . 'demo' . DS . 'controller' . DS,
+        DS . 'demo' . DS . 'Controller' . DS,
+        DS . 'demo' . DS . 'Plugin' . DS,
         DS . 'demo' . DS . 'DB' . DS,
         DS . 'demo' . DS . 'DB' . DS . 'DAO' . DS,
         DS . 'demo' . DS . 'DB' . DS . 'Bean' . DS,
