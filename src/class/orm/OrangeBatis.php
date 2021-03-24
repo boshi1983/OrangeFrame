@@ -506,7 +506,9 @@ class OrangeBatis
 
         foreach ($vals as $v) {
 
-            $v['value'] = trim(str_replace("\n", ' ', $v['value']));
+            if (isset($v['value'])) {
+                $v['value'] = trim(str_replace("\n", ' ', $v['value']));
+            }
 
             switch ($v['type']) {
                 case 'open':
