@@ -4,10 +4,209 @@ class OrangeBatisException extends Exception
 {
 }
 
+class XmlNode
+{
+    /**
+     * @var string
+     */
+    private $id = '';
+
+    /**
+     * @var string
+     */
+    private $tag = '';
+
+    /**
+     * @var string
+     */
+    private $resultType = '';
+
+    /**
+     * @var false
+     */
+    private $transaction = false;
+
+    /**
+     * @var string
+     */
+    private $func = '';
+
+    /**
+     * @var string
+     */
+    private $sql = '';
+
+    /**
+     * @var XmlNode
+     */
+    private $parent = null;
+
+    /**
+     * @var array
+     */
+    private $children = [];
+
+    /**
+     * @var array
+     */
+    private $attributes = [];
+
+    /**
+     * XmlNode constructor.
+     * @param string $id
+     * @param string $tag
+     * @param string $resultType
+     * @param false $transaction
+     */
+    public function __construct(string $id, string $tag, string $resultType = '', $transaction = false)
+    {
+        $this->id = $id;
+        $this->tag = strtolower($tag);
+        $this->resultType = $resultType;
+        $this->transaction = $transaction;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+
+    /**
+     * @param mixed $id
+     */
+    public function setId($id): void
+    {
+        $this->id = $id;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getTag()
+    {
+        return $this->tag;
+    }
+
+    /**
+     * @param mixed $tag
+     */
+    public function setTag($tag): void
+    {
+        $this->tag = $tag;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getResultType()
+    {
+        return $this->resultType;
+    }
+
+    /**
+     * @param mixed $resultType
+     */
+    public function setResultType($resultType): void
+    {
+        $this->resultType = $resultType;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getTransaction()
+    {
+        return $this->transaction;
+    }
+
+    /**
+     * @param mixed $transaction
+     */
+    public function setTransaction($transaction): void
+    {
+        $this->transaction = $transaction;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFunc()
+    {
+        return $this->func;
+    }
+
+    /**
+     * @param mixed $func
+     */
+    public function setFunc($func): void
+    {
+        $this->func = $func;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getSql()
+    {
+        return $this->sql;
+    }
+
+    /**
+     * @param mixed $sql
+     */
+    public function setSql($sql): void
+    {
+        $this->sql = $sql;
+    }
+
+    /**
+     * @return XmlNode
+     */
+    public function getParent(): ?XmlNode
+    {
+        return $this->parent;
+    }
+
+    /**
+     * @param XmlNode $parent
+     */
+    public function setParent(?XmlNode $parent): void
+    {
+        $this->parent = $parent;
+    }
+
+    public function addChind($node): void
+    {
+        $this->children[] = $node;
+    }
+
+    public function getChildren():array
+    {
+        return $this->children;
+    }
+
+    public function setAttribute($attributes):void
+    {
+        $this->attributes = $attributes;
+    }
+
+    public function getAttribute($key)
+    {
+        if (empty($key)) {
+            return $this->attributes;
+        }
+
+        return $this->attributes[strtoupper($key)] ?? '';
+    }
+}
+
 class OrangeBatis
 {
     //是否强制编译代理类文件
-    static $forceCompile = false;
+    static $forceCompile = true;
     static $dirCompile = 'ProxyTemp/';
     static $dirXml = 'DB/XmlModel/';
 
@@ -209,7 +408,6 @@ class OrangeBatis
         return $obj;
     }
 
-
     /**
      * @param ReflectionClass $reflection
      * @throws ReflectionException
@@ -291,6 +489,75 @@ class OrangeBatis
         return $obj;
     }
 
+    private function xmlIntoStruct($xmlName)
+    {
+        $path = ROOT_PATH . self::$dirXml . self::uncamelize($xmlName) . '.xml';
+
+        $fh = fopen($path,'r') or die($php_errormsg);
+        $simple = fread($fh, filesize($path));
+        fclose($fh) or die($php_errormsg);
+
+        $p = xml_parser_create();
+        xml_parse_into_struct($p, $simple, $vals, $index);
+        xml_parser_free($p);
+
+        $root = null;
+        $curnode = null;
+
+        foreach ($vals as $v) {
+
+            $v['value'] = trim(str_replace("\n", ' ', $v['value']));
+
+            switch ($v['type']) {
+                case 'open':
+
+                    $attributes = $v['attributes'];
+                    $node = new XmlNode($attributes['ID'] ?? '', $v['tag'], $attributes['RESULTTYPE'] ?? '', $attributes['TRANSACTION'] ?? '');
+                    $node->setAttribute($attributes);
+                    $node->setParent($curnode);
+
+                    $value = trim($v['value']);
+                    if (!empty($value)) {
+                        $node->addChind($value);
+                    }
+
+                    $curnode = $node;
+                    if (is_null($root)) {
+                        $root = $curnode;
+                    } else {
+                        $root->addChind($curnode);
+                    }
+                    break;
+                case 'cdata':
+                    $value = trim($v['value']);
+                    if (!empty($value)) {
+                        $curnode->addChind($value);
+                    }
+                    break;
+                case 'close':
+                    $curnode = $curnode->getParent();
+                    break;
+                case 'complete':
+
+                    $attributes = $v['attributes'];
+                    $node = new XmlNode($attributes['ID'] ?? '', $v['tag'], $attributes['RESULTTYPE'] ?? '', $attributes['TRANSCATION'] ?? '');
+                    $node->setAttribute($attributes);
+
+                    $value = trim($v['value']);
+                    if (!empty($value)) {
+                        $node->setSql($value);
+                    }
+
+                    $curnode->addChind($node);
+                    break;
+                default:
+                    echo $v['type'] . '<br>';
+            }
+        }
+
+        return $root;
+    }
+
     /**
      * 解析xml
      * @param $xmlName
@@ -299,45 +566,34 @@ class OrangeBatis
      */
     private function parseXml($xmlName)
     {
-        $path = ROOT_PATH . self::$dirXml . self::uncamelize($xmlName) . '.xml';
-        $mapper = simplexml_load_file($path);
-        if (empty($mapper)) {
-            throw new OrangeBatisException(libxml_get_errors());
-        }
+        $root = $this->xmlIntoStruct($xmlName);
 
         $xmlContents = [];
-        foreach ($mapper->children() as $key => $value) {
+        foreach ($root->getChildren() as $xmlContent) {
 
-            $id = trim($value->attributes()['id']);
-            if ($value->children()->count() > 0) {
-                $xmlContent = new XmlNode($id, $key, trim($value->attributes()['resultType']), $value->attributes()['transaction']);
+            $id = $xmlContent->getId();
+            if (count($xmlContent->getChildren()) > 0) {
 
-                $arr = explode("\n", trim($value));
-                if (count($arr) <= 1) {
-                    $arr[] = '';
-                }
-
+                $children = $xmlContent->getChildren();
                 $sql = '';
-                $paramid = 0;
-                $funcs = [];
-                foreach ($arr as $data) {
+                foreach ($children as $idx => $child) {
 
-                    $data = trim($data);
-                    if (empty($data)) {
-                        $node = $value->children()[$paramid];
+                    if (is_string($child)) {
+                        $sql .= $child;
+                    } else {
 
-                        $sql .= ' \' . $param' . $paramid . ' . \' ';
+                        $sql .= ' \' . $param' . $idx . ' . \' ';
 
-                        $func = '$param'.$paramid.' = $this->'.$node->getName().'(';
-                        switch ($node->getName()) {
+                        $func = '$param'.$idx.' = $this->'.$child->getTag().'(';
+                        switch ($child->getTag()) {
                             case 'foreach':
-                                $collection = trim($node->attributes()['collection']);
-                                $item = trim($node->attributes()['item']);
-                                $open = trim($node->attributes()['open']);
-                                $separator = trim($node->attributes()['separator']);
-                                $close = trim($node->attributes()['close']);
+                                $collection = $child->getAttribute('collection');
+                                $item = $child->getAttribute('item');
+                                $open = $child->getAttribute('open');
+                                $separator = $child->getAttribute('separator');
+                                $close = $child->getAttribute('close');
 
-                                $content = trim($node);
+                                $content = $child->getSql();
 
                                 $func .= $collection . ',\'' . $item . '\',\'' . $content . '\',\'' . $open . '\',\'' . $separator . '\',\'' . $close . '\'';
                                 break;
@@ -348,17 +604,11 @@ class OrangeBatis
                         $func .= ');' . PHP_EOL;
 
                         $funcs[] = $func;
-                        ++$paramid;
-                    } else {
-                        $sql .= $data;
                     }
                 }
 
                 $xmlContent->setFunc($funcs);
                 $xmlContent->setSql($sql);
-            } else {
-                $xmlContent = new XmlNode($id, $key, trim($value->attributes()['resultType']), $value->attributes()['transaction']);
-                $xmlContent->setSql(trim($value));
             }
             $xmlContents[$id] = $xmlContent;
         }
@@ -372,6 +622,7 @@ class OrangeBatis
      * @param XmlNode $xmlNode
      * @return string
      * @throws OrangeBatisException
+     * @throws ReflectionException
      */
     private function generateMethod(ReflectionMethod $method, XmlNode $xmlNode)
     {
