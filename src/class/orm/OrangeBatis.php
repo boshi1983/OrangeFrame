@@ -4,6 +4,62 @@ class OrangeBatisException extends Exception
 {
 }
 
+class BaseReflection
+{
+    /**
+     * 反射内存池
+     * @var array
+     */
+    private static $reflectionList = [];
+
+    /**
+     * @var string
+     */
+    private $namespace = '';
+
+    /**
+     * 获取反射函数
+     * @param string $className 类名
+     * @return ReflectionClass
+     * @throws OrangeBatisException
+     */
+    protected function getReflectionByClassName(string $className)
+    {
+        $className = $this->classNameSpace($className);
+
+        if (!isset(self::$reflectionList[$className]) || empty(self::$reflectionList[$className])) {
+            try {
+                self::$reflectionList[$className] = new ReflectionClass($className);
+            } catch (Exception $e) {
+                throw new OrangeBatisException($e);
+            }
+        }
+        return self::$reflectionList[$className];
+    }
+
+    /**
+     * 处理类的命名空间
+     * @param string $className
+     * @return string
+     */
+    protected function classNameSpace(string $className)
+    {
+        if(!empty($this->namespace) && strpos($className, $this->namespace . '\\') !== 0) {
+            return $this->namespace . '\\' . $className;
+        }
+        return $className;
+    }
+
+    /**
+     * 设置类的命名空间
+     * @param string $namespace
+     */
+    protected function setNameSpace(string $namespace)
+    {
+        $this->namespace = $namespace;
+    }
+}
+
 class XmlNode
 {
     /**
@@ -27,9 +83,14 @@ class XmlNode
     private $transaction = false;
 
     /**
-     * @var string
+     * @var array
      */
-    private $func = '';
+    private $func = [];
+
+    /**
+     * @var array
+     */
+    private $variate = [];
 
     /**
      * @var string
@@ -147,6 +208,22 @@ class XmlNode
     }
 
     /**
+     * @return array
+     */
+    public function getVariate(): array
+    {
+        return $this->variate;
+    }
+
+    /**
+     * @param array $variate
+     */
+    public function setVariate(array $variate): void
+    {
+        $this->variate = $variate;
+    }
+
+    /**
      * @return mixed
      */
     public function getSql()
@@ -201,20 +278,19 @@ class XmlNode
 
         return $this->attributes[strtoupper($key)] ?? '';
     }
+
+    public function getNameSpace()
+    {
+        return $this->attributes['NAMESPACE'] ?? '';
+    }
 }
 
-class OrangeBatis
+class OrangeBatis extends BaseReflection
 {
     //是否强制编译代理类文件
     static $forceCompile = true;
     static $dirCompile = 'ProxyTemp/';
     static $dirXml = 'DB/XmlModel/';
-
-    /**
-     * 反射内存池
-     * @var array
-     */
-    private $reflectionList = [];
 
     /**
      * @var DocParser
@@ -229,7 +305,6 @@ class OrangeBatis
     {
         $this->parser = $parser;
     }
-
 
     /**
      * 下划线转驼峰
@@ -265,7 +340,7 @@ class OrangeBatis
     }
 
     /**
-     * @param ReflectionType $className
+     * @param ReflectionType $type
      * @return string
      */
     private function getClassShortName(ReflectionType $type)
@@ -274,25 +349,7 @@ class OrangeBatis
         if ($type->allowsNull()) {
             $rt .= '?';
         }
-        return $rt . basename(str_replace('\\', '/', $type-> getName()));
-    }
-
-    /**
-     * 获取反射函数
-     * @param string $className 类名
-     * @return mixed
-     * @throws OrangeBatisException
-     */
-    private function getReflectionByClassName(string $className)
-    {
-        if (!isset($this->reflectionList[$className]) || empty($this->reflectionList[$className])) {
-            try {
-                $this->reflectionList[$className] = new ReflectionClass($className);
-            } catch (Exception $e) {
-                throw new OrangeBatisException($e);
-            }
-        }
-        return $this->reflectionList[$className];
+        return $rt . basename(str_replace('\\', '/', $type->getName()));
     }
 
     /**
@@ -303,7 +360,7 @@ class OrangeBatis
     private function generatedClass(string $interFaceName)
     {
         $xmlName = substr($interFaceName, 1, strlen($interFaceName) - 4);
-        $xmlContent = $this->parseXml($xmlName);
+        list($namespace, $xmlContent) = $this->parseXml($xmlName);
 
         $reflection = $this->getReflectionByClassName($interFaceName);
         $baseReflextion = $this->getReflectionByClassName('BaseBatisProxy');
@@ -323,11 +380,18 @@ class OrangeBatis
             }
         }
 
-        $class = 'final class ' . $xmlName . 'Proxy extends BaseBatisProxy implements ' . $interFaceName . ' {' . PHP_EOL;
+        $class = '';
+        if (!empty($namespace)) {
+            $class .= 'namespace ' . $namespace . '{' . PHP_EOL;
+        }
+        $class .= 'final class ' . $xmlName . 'Proxy extends BaseBatisProxy implements ' . $interFaceName . ' {' . PHP_EOL;
         $class .= 'const VERSION = ' . microtime(true) . ';' . PHP_EOL;
-        $class .= join(PHP_EOL . PHP_EOL, $functionList) . PHP_EOL;
+        $class .= join(PHP_EOL, $functionList) . PHP_EOL;
 
         $class .= '}' . PHP_EOL;
+        if (!empty($namespace)) {
+            $class .= '}' . PHP_EOL;
+        }
 
         $path = ROOT_PATH . self::$dirCompile . $xmlName . 'Proxy.php';
         file_put_contents($path, '<?php' . PHP_EOL . $class);
@@ -347,10 +411,10 @@ class OrangeBatis
     /**
      * 把查询出来的数据，赋值到对象
      * @param XmlNode $xmlNode xml节点
-     * @param ReflectionType $returnType
+     * @param ReflectionNamedType|ReflectionType $returnType
      * @param string $rtName
      * @return string
-     * @throws OrangeBatisException
+     * @throws OrangeBatisException|ReflectionException
      */
     private function setValue(XmlNode $xmlNode, ?ReflectionType $returnType, string &$rtName)
     {
@@ -364,18 +428,18 @@ class OrangeBatis
         $obj = '';
         switch ($returnType->getName()) {
             case 'array':
-                $obj .= '$result = $this->query($sql);' . PHP_EOL;
-                $obj .= '$list = [];' . PHP_EOL;
-                $obj .= 'if(is_array($result)) { foreach ($result as $row) {' . PHP_EOL;
-                $obj .= $this->row2Object($class, $value);
-                $obj .= '$list[] = $obj;' . PHP_EOL;
-                $obj .= '}}' . PHP_EOL;
                 $rtName = '$list';
+                $obj .= '$result = $this->query($sql);' . PHP_EOL;
+                $obj .= $rtName . ' = [];' . PHP_EOL;
+                $obj .= 'if(is_array($result)) { foreach ($result as $row) {' . PHP_EOL;
+                $obj .= $this->row2Object($class, $value, '$obj');
+                $obj .= $rtName . '[] = $obj;' . PHP_EOL;
+                $obj .= '}}' . PHP_EOL;
                 break;
             default:
-                $obj .= $value . ' = $this->get($sql);' . PHP_EOL;
-                $obj .= $this->row2Object($class, $value);
                 $rtName = '$obj';
+                $obj .= $value . ' = $this->get($sql);' . PHP_EOL;
+                $obj .= $this->row2Object($class, $value, $rtName);
                 break;
         }
 
@@ -387,11 +451,11 @@ class OrangeBatis
      * @param string $class
      * @param string $value
      * @return string
-     * @throws OrangeBatisException
+     * @throws OrangeBatisException|ReflectionException
      */
-    private function row2Object(string $class, string $value)
+    private function row2Object(string $class, string $value, string $returnName)
     {
-        $obj = '$obj = new ' . $class . '();' . PHP_EOL;
+        $obj = $returnName . ' = new ' . $class . '();' . PHP_EOL;
         $obj .= 'if(!empty('.$value.')) {' . PHP_EOL;
         $reflection = $this->getReflectionByClassName($class);
         $methodList = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
@@ -401,7 +465,7 @@ class OrangeBatis
                 continue;
 
             $varname = self::uncamelize(substr($name, 3));
-            $obj .= '$obj->' . $name . '(' . $value . '[\'' . $varname . '\']??'.$this->getDefaultByPropertyType($reflection, $varname).');' . PHP_EOL;
+            $obj .= $returnName . '->' . $name . '(' . $value . '[\'' . $varname . '\']??' . $this->getDefaultByPropertyType($reflection, $varname) . ');' . PHP_EOL;
         }
         $obj .= '}' . PHP_EOL;
 
@@ -410,10 +474,16 @@ class OrangeBatis
 
     /**
      * @param ReflectionClass $reflection
+     * @param string $name
+     * @return int|string
      * @throws ReflectionException
      */
     private function getDefaultByPropertyType(ReflectionClass $reflection, string $name)
     {
+        if (!$reflection->hasProperty($name)) {
+            return '\'\'';
+        }
+
         $property = $reflection->getProperty($name);
         if (empty($property)) {
             return '\'\'';
@@ -493,7 +563,7 @@ class OrangeBatis
     {
         $path = ROOT_PATH . self::$dirXml . self::uncamelize($xmlName) . '.xml';
 
-        $fh = fopen($path,'r') or die($php_errormsg);
+        $fh = fopen($path, 'r') or die($php_errormsg);
         $simple = fread($fh, filesize($path));
         fclose($fh) or die($php_errormsg);
 
@@ -512,13 +582,12 @@ class OrangeBatis
 
             switch ($v['type']) {
                 case 'open':
-
                     $attributes = $v['attributes'];
                     $node = new XmlNode($attributes['ID'] ?? '', $v['tag'], $attributes['RESULTTYPE'] ?? '', $attributes['TRANSACTION'] ?? '');
                     $node->setAttribute($attributes);
                     $node->setParent($curnode);
 
-                    $value = trim($v['value']);
+                    $value = trim($v['value'] ?? '');
                     if (!empty($value)) {
                         $node->addChind($value);
                     }
@@ -531,7 +600,7 @@ class OrangeBatis
                     }
                     break;
                 case 'cdata':
-                    $value = trim($v['value']);
+                    $value = trim($v['value'] ?? '');
                     if (!empty($value)) {
                         $curnode->addChind($value);
                     }
@@ -540,12 +609,11 @@ class OrangeBatis
                     $curnode = $curnode->getParent();
                     break;
                 case 'complete':
-
                     $attributes = $v['attributes'];
                     $node = new XmlNode($attributes['ID'] ?? '', $v['tag'], $attributes['RESULTTYPE'] ?? '', $attributes['TRANSCATION'] ?? '');
                     $node->setAttribute($attributes);
 
-                    $value = trim($v['value']);
+                    $value = trim($v['value'] ?? '');
                     if (!empty($value)) {
                         $node->setSql($value);
                     }
@@ -569,26 +637,33 @@ class OrangeBatis
     private function parseXml($xmlName)
     {
         $root = $this->xmlIntoStruct($xmlName);
+        $namespace = $root->getNameSpace();
+        $this->setNameSpace($namespace);
 
         $xmlContents = [];
         foreach ($root->getChildren() as $xmlContent) {
-
             $id = $xmlContent->getId();
             if (count($xmlContent->getChildren()) > 0) {
 
                 $children = $xmlContent->getChildren();
                 $sql = '';
+                $funcs = [];
+                $vars = [];
                 foreach ($children as $idx => $child) {
 
                     if (is_string($child)) {
                         $sql .= $child;
                     } else {
 
-                        $sql .= ' \' . $param' . $idx . ' . \' ';
+                        $func = '';
+                        $var = '';
 
-                        $func = '$param'.$idx.' = $this->'.$child->getTag().'(';
                         switch ($child->getTag()) {
                             case 'foreach':
+                                $sql .= ' \' . $param' . $idx . ' . \' ';
+
+                                $func = '$param' . $idx . ' = $this->foreach(';
+
                                 $collection = $child->getAttribute('collection');
                                 $item = $child->getAttribute('item');
                                 $open = $child->getAttribute('open');
@@ -598,24 +673,38 @@ class OrangeBatis
                                 $content = $child->getSql();
 
                                 $func .= $collection . ',\'' . $item . '\',\'' . $content . '\',\'' . $open . '\',\'' . $separator . '\',\'' . $close . '\'';
+
+                                $func .= ');' . PHP_EOL;
+
+                                break;
+                            case 'variate':
+                                $collection = $child->getAttribute('collection');
+                                $var = ['name' => $child->getAttribute('name'), 'type' => $child->getAttribute('type')];
+                                $sql .= ' \' . ' . $var['name'] . ' . \' ';
+                                $func = 'list($fields, $values, $datas, $length) = $this->getInsertInfo(' . $collection . ');' . PHP_EOL;
                                 break;
                             default:
                                 break;
                         }
 
-                        $func .= ');' . PHP_EOL;
+                        if (!empty($func)) {
+                            $funcs[] = $func;
+                        }
 
-                        $funcs[] = $func;
+                        if (!empty($var)) {
+                            $vars[] = $var;
+                        }
                     }
                 }
 
                 $xmlContent->setFunc($funcs);
+                $xmlContent->setVariate($vars);
                 $xmlContent->setSql($sql);
             }
             $xmlContents[$id] = $xmlContent;
         }
 
-        return $xmlContents;
+        return [$namespace, $xmlContents];
     }
 
     /**
@@ -669,13 +758,40 @@ class OrangeBatis
 
     /**
      * 生成操作方法体
-     * @param $method
-     * @param $paramList
+     * @param ReflectionMethod $method
+     * @param array $paramList
+     * @param XmlNode $xmlNode
+     * @return string
+     * @throws OrangeBatisException|ReflectionException
+     */
+    private function generateMethodContent(ReflectionMethod $method, array $paramList, XmlNode $xmlNode)
+    {
+        $content = null;
+        switch ($xmlNode->getTag()) {
+            case 'insert':
+                $content = $this->insertMethodContent($method, $paramList, $xmlNode);
+                break;
+            case 'update':
+            case 'delete':
+                $content = $this->updateMethodContent($method, $paramList, $xmlNode);
+                break;
+            default://'select'
+                $content = $this->selectMethodContent($method, $paramList, $xmlNode);
+                break;
+        }
+
+        return $content;
+    }
+
+    /**
+     * 生成插入方法体
+     * @param ReflectionMethod $method
+     * @param array $paramList
      * @param XmlNode $xmlNode
      * @return string
      * @throws OrangeBatisException
      */
-    public function generateMethodContent(ReflectionMethod $method, array $paramList, XmlNode $xmlNode)
+    private function insertMethodContent(ReflectionMethod $method, array $paramList, XmlNode $xmlNode)
     {
         $content = '';
 
@@ -685,13 +801,374 @@ class OrangeBatis
             $content .= '$this->begin();' . PHP_EOL;
         }
 
-        if (is_array($xmlNode->getFunc())) {
-            $content .= join('', $xmlNode->getFunc());
+        $front = '';
+        $behind = '';
+
+        foreach ($paramList as $param) {
+
+            if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean'])) {
+                if (strpos($xmlNode->getSql(), ':' . $param['name']) !== false) {
+                    $front .= '$this->bindParam(\'' . $param['name'] . '\', $' . $param['name'] . ');' . PHP_EOL;
+                }
+            } elseif (in_array($param['type'], ['array', 'object'])) {
+
+                $func = array_unique($xmlNode->getFunc());
+                if (is_array($func)) {
+                    $front .= join('', $func);
+                }
+
+                if (empty($func)) {
+                    $behind .= 'foreach ($' . $param['name'] . ' as $key => $value) {' . PHP_EOL;
+                    $behind .= 'if (strpos($sql, \':\' . $key) !== false) {' . PHP_EOL;
+                    $behind .= '$this->bindParam($key, $value);' . PHP_EOL;
+                    $behind .= '}' . PHP_EOL;
+                    $behind .= '}' . PHP_EOL;
+                } else {
+                    $front .= 'foreach ($datas as $key => $value) {' . PHP_EOL;
+                    $front .= '$this->bindParam($key, $value);' . PHP_EOL;
+                    $front .= '}' . PHP_EOL;
+                }
+            } else {
+
+                $reflection = $this->getReflectionByClassName($param['type']);
+                $parentClass = $reflection->getParentClass();
+                if (!empty($parentClass) && $parentClass->getName() == $this->classNameSpace('BaseBean')) {
+
+                    $front .= '$' . $param['name'] . ' = $' . $param['name'] . '->genDataMap();' . PHP_EOL;
+
+                    $func = array_unique($xmlNode->getFunc());
+                    if (is_array($func)) {
+                        $front .= join('', $func);
+                    }
+
+                    if (empty($func)) {
+                        $behind .= 'foreach ($' . $param['name'] . ' as $key => $value) {' . PHP_EOL;
+                        $behind .= 'if (strpos($sql, \':\' . $key) !== false) {' . PHP_EOL;
+                        $behind .= '$this->bindParam($key, $value);' . PHP_EOL;
+                        $behind .= '}' . PHP_EOL;
+                        $behind .= '}' . PHP_EOL;
+                    } else {
+                        $front .= 'foreach ($datas as $key => $value) {' . PHP_EOL;
+                        $front .= '$this->bindParam($key, $value);' . PHP_EOL;
+                        $front .= '}' . PHP_EOL;
+                    }
+
+                } else {
+
+                    $vars = $xmlNode->getVariate();
+                    foreach ($vars as $var) {
+                        $front .= $var['name'] . ' = [];' . PHP_EOL;
+                    }
+
+                    $methodList = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
+                    foreach ($methodList as $method) {
+                        $methodName = $method->getName();
+                        if (strpos($methodName, 'get') !== 0)
+                            continue;
+
+                        $varname = self::uncamelize(substr($methodName, 3));
+
+                        $front .= 'if (!is_null(' . '$' . $param['name'] . '->' . $methodName . '())) {' . PHP_EOL;
+                        $front .= '$this->bindParam(\'' . $varname . '\', ' . '$' . $param['name'] . '->' . $methodName . '());' . PHP_EOL;
+
+                        foreach ($vars as $var) {
+                            switch ($var['type']) {
+                                case 'field':
+                                    $front .= $var['name'] . '[] = \'' . $varname . '\';' . PHP_EOL;
+                                    break;
+                                case 'value':
+                                    $front .= $var['name'] . '[] = \':' . $varname . '\';' . PHP_EOL;
+                                    break;
+                            }
+                        }
+
+                        $front .= '}' . PHP_EOL;
+                    }
+
+                    foreach ($vars as $var) {
+                        switch ($var['type']) {
+                            case 'field':
+                                $front .= $var['name'] . ' = join(\',\', ' . $var['name'] . ');' . PHP_EOL;
+                                break;
+                            case 'value':
+                                $front .= $var['name'] . ' = \'(\' . join(\',\', ' . $var['name'] . ') . \')\';' . PHP_EOL;
+                                break;
+                        }
+                    }
+
+                    $front .= PHP_EOL;
+                }
+            }
+        }
+
+        $content .= $front;
+        $content .= '$sql = \'' . $xmlNode->getSql() . '\';' . PHP_EOL;
+        $content .= $behind;
+
+        $content .= '$this->execute($sql);' . PHP_EOL;
+
+        if ($transaction) {
+            $rtName = '$rt';
+            $content .= $rtName . ' = $this->getLastInsID();' . PHP_EOL;
+            $content .= 'return $this->commit()? ' . $rtName . ' : ';
+
+            $methodReturnName = '';
+            if (!empty($method->getReturnType())) {
+                $methodReturnName = $method->getReturnType()->getName();
+            }
+            switch ($methodReturnName) {
+                case 'int':
+                    $content .= '0;';
+                    break;
+                case 'float':
+                    $content .= '0.0;';
+                    break;
+                case 'array':
+                    $content .= '[];';
+                    break;
+                case '':
+                case 'string':
+                    $content .= '\'\';';
+                    break;
+                default:
+                    $content .= 'null;';
+                    break;
+            }
+        } else {
+            $content .= 'return $this->getLastInsID();' . PHP_EOL;
+        }
+
+        return $content;
+    }
+
+    /**
+     * * 生成修改方法体
+     * @param ReflectionMethod $method
+     * @param array $paramList
+     * @param XmlNode $xmlNode
+     * @return string
+     * @throws OrangeBatisException
+     */
+    private function updateMethodContent(ReflectionMethod $method, array $paramList, XmlNode $xmlNode)
+    {
+        $content = '';
+
+        $transaction = false;
+        if ($xmlNode->getTransaction()) {
+            $transaction = true;
+            $content .= '$this->begin();' . PHP_EOL;
+        }
+
+        $front = '';
+        $behind = '';
+
+        foreach ($paramList as $param) {
+
+            if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean'])) {
+                if (strpos($xmlNode->getSql(), ':' . $param['name']) !== false) {
+                    $front .= '$this->bindParam(\'' . $param['name'] . '\', $' . $param['name'] . ');' . PHP_EOL;
+                }
+            } elseif (in_array($param['type'], ['array', 'object'])) {
+
+                $func = array_unique($xmlNode->getFunc());
+                if (is_array($func)) {
+                    $front .= join('', $func);
+                }
+
+                if (empty($func)) {
+                    $behind .= 'foreach ($' . $param['name'] . ' as $key => $value) {' . PHP_EOL;
+                    $behind .= 'if (strpos($sql, \':\' . $key) !== false) {' . PHP_EOL;
+                    $behind .= '$this->bindParam($key, $value);' . PHP_EOL;
+                    $behind .= '}' . PHP_EOL;
+                    $behind .= '}' . PHP_EOL;
+                } else {
+
+                    $vars = $xmlNode->getVariate();
+                    foreach ($vars as $var) {
+                        $front .= $var['name'] . ' = [];' . PHP_EOL;
+                    }
+
+                    $front .= 'foreach ($datas as $key => $value) {' . PHP_EOL;
+                    $front .= '$this->bindParam($key, $value);' . PHP_EOL;
+
+                    foreach ($vars as $var) {
+                        switch ($var['type']) {
+                            case 'set':
+                                $front .= $var['name'] . '[] = $key . \'=:\' . $key;' . PHP_EOL;
+                                break;
+                        }
+                    }
+
+                    $front .= '}' . PHP_EOL;
+
+                    foreach ($vars as $var) {
+                        switch ($var['type']) {
+                            case 'set':
+                                $front .= $var['name'] . ' = join(\',\', ' . $var['name'] . ');' . PHP_EOL;
+                                break;
+                        }
+                    }
+                }
+            } else {
+
+                $reflection = $this->getReflectionByClassName($param['type']);
+                $parentClass = $reflection->getParentClass();
+                if (!empty($parentClass) && $parentClass->getName() == $this->classNameSpace('BaseBean')) {
+
+                    $front .= '$' . $param['name'] . ' = $' . $param['name'] . '->genDataMap();' . PHP_EOL;
+
+                    $func = array_unique($xmlNode->getFunc());
+                    if (is_array($func)) {
+                        $front .= join('', $func);
+                    }
+
+                    if (empty($func)) {
+                        $behind .= 'foreach ($' . $param['name'] . ' as $key => $value) {' . PHP_EOL;
+                        $behind .= 'if (strpos($sql, \':\' . $key) !== false) {' . PHP_EOL;
+                        $behind .= '$this->bindParam($key, $value);' . PHP_EOL;
+                        $behind .= '}' . PHP_EOL;
+                        $behind .= '}' . PHP_EOL;
+                    } else {
+
+                        $vars = $xmlNode->getVariate();
+                        foreach ($vars as $var) {
+                            $front .= $var['name'] . ' = [];' . PHP_EOL;
+                        }
+
+                        $front .= 'foreach ($datas as $key => $value) {' . PHP_EOL;
+                        $front .= '$this->bindParam($key, $value);' . PHP_EOL;
+
+                        foreach ($vars as $var) {
+                            switch ($var['type']) {
+                                case 'set':
+                                    $front .= $var['name'] . '[] = $key . \'=:\' . $key;' . PHP_EOL;
+                                    break;
+                            }
+                        }
+
+                        $front .= '}' . PHP_EOL;
+
+                        foreach ($vars as $var) {
+                            switch ($var['type']) {
+                                case 'set':
+                                    $front .= $var['name'] . ' = join(\',\', ' . $var['name'] . ');' . PHP_EOL;
+                                    break;
+                            }
+                        }
+
+                    }
+
+                } else {
+
+                    $vars = $xmlNode->getVariate();
+                    foreach ($vars as $var) {
+                        $front .= $var['name'] . ' = [];' . PHP_EOL;
+                    }
+
+                    $methodList = $reflection->getMethods(ReflectionMethod::IS_PUBLIC);
+                    foreach ($methodList as $method) {
+                        $methodName = $method->getName();
+                        if (strpos($methodName, 'get') !== 0)
+                            continue;
+
+                        $varname = self::uncamelize(substr($methodName, 3));
+
+                        $front .= 'if (!is_null(' . '$' . $param['name'] . '->' . $methodName . '())) {' . PHP_EOL;
+                        $front .= '$this->bindParam(\'' . $varname . '\', ' . '$' . $param['name'] . '->' . $methodName . '());' . PHP_EOL;
+
+                        foreach ($vars as $var) {
+                            switch ($var['type']) {
+                                case 'field':
+                                    $front .= $var['name'] . '[] = \'' . $varname . '\';' . PHP_EOL;
+                                    break;
+                                case 'value':
+                                    $front .= $var['name'] . '[] = \':' . $varname . '\';' . PHP_EOL;
+                                    break;
+                            }
+                        }
+
+                        $front .= '}' . PHP_EOL;
+                    }
+
+                    foreach ($vars as $var) {
+                        switch ($var['type']) {
+                            case 'field':
+                                $front .= $var['name'] . ' = join(\',\', ' . $var['name'] . ');' . PHP_EOL;
+                                break;
+                            case 'value':
+                                $front .= $var['name'] . ' = \'(\' . join(\',\', ' . $var['name'] . ') . \')\';' . PHP_EOL;
+                                break;
+                        }
+                    }
+
+                    $front .= PHP_EOL;
+                }
+            }
+        }
+
+        $content .= $front;
+        $content .= '$sql = \'' . $xmlNode->getSql() . '\';' . PHP_EOL;
+        $content .= $behind;
+
+        if ($transaction) {
+            $rtName = '$rt';
+            $content .= $rtName . ' = $this->execute($sql);' . PHP_EOL;
+            $content .= 'return $this->commit()? ' . $rtName . ' : ';
+
+            $methodReturnName = '';
+            if (!empty($method->getReturnType())) {
+                $methodReturnName = $method->getReturnType()->getName();
+            }
+            switch ($methodReturnName) {
+                case 'int':
+                    $content .= '0;';
+                    break;
+                case 'float':
+                    $content .= '0.0;';
+                    break;
+                case 'array':
+                    $content .= '[];';
+                    break;
+                case '':
+                case 'string':
+                    $content .= '\'\';';
+                    break;
+                default:
+                    $content .= 'null;';
+                    break;
+            }
+        } else {
+            $content .= 'return $this->execute($sql);' . PHP_EOL;
+        }
+
+        return $content;
+    }
+
+    /**
+     * * 生成查询方法体
+     * @param ReflectionMethod $method
+     * @param array $paramList
+     * @param XmlNode $xmlNode
+     * @return string
+     * @throws OrangeBatisException
+     * @throws ReflectionException
+     */
+    private function selectMethodContent(ReflectionMethod $method, array $paramList, XmlNode $xmlNode)
+    {
+        $content = '';
+        $transaction = false;
+        if ($xmlNode->getTransaction()) {
+            $transaction = true;
+        }
+
+        $func = $xmlNode->getFunc();
+        if (is_array($func)) {
+            $content .= join('', $func);
         }
         $content .= '$sql = \'' . $xmlNode->getSql() . '\';' . PHP_EOL;
 
         foreach ($paramList as $param) {
-            if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean', ''])) {
+            if (in_array($param['type'], ['int', 'string', 'float', 'double', 'bool', 'boolean'])) {
                 if (strpos($xmlNode->getSql(), ':' . $param['name']) !== false) {
                     $content .= '$this->bindParam(\'' . $param['name'] . '\', $' . $param['name'] . ');' . PHP_EOL;
                 }
@@ -706,53 +1183,63 @@ class OrangeBatis
             }
         }
 
-        $rtName = '$rt';
-
-        $methodReturnType = null;
+        $methodReturnName = '';
         if (!empty($method->getReturnType())) {
-            $methodReturnType = $method->getReturnType()->getName();
+            $methodReturnName = $method->getReturnType()->getName();
         }
 
-        switch ($xmlNode->getTag())
-        {
-            case 'select':
-                switch ($methodReturnType) {
-                    case 'int':
-                        $content .= ($transaction?'$rt =':'return') . ' intval($this->getOne($sql));' . PHP_EOL;
-                        break;
-                    case 'string':
-                        $content .= ($transaction?'$rt =':'return') . ' \'\' . $this->getOne($sql);' . PHP_EOL;
-                        break;
-                    case 'float':
-                        $content .= ($transaction?'$rt =':'return') . ' floatval($this->getOne($sql));' . PHP_EOL;
-                        break;
-                    default:
-                        $content .= $this->setValue($xmlNode, $method->getReturnType(), $rtName);
-                        if (!$transaction) {
-                            $content .= 'return ' . $rtName . ';' . PHP_EOL;
-                        }
-                        break;
-                }
-                break;
-            case 'insert':
-                $content .= '$this->execute($sql);' . PHP_EOL;
-                $content .= ($transaction?'$rt =':'return') . ' $this->getLastInsID();' . PHP_EOL;
-                break;
-            default:
-                //update, delete
-                $content .= ($transaction?'$rt =':'return') . ' $this->execute($sql);' . PHP_EOL;
-                break;
-        }
-
+        $rtName = '$rt';
         if ($transaction) {
-            $content .= 'return $this->commit()? '.$rtName.' : ';
+            switch ($methodReturnName) {
+                case 'int':
+                    $content .= $rtName . ' = intval($this->getOne($sql));' . PHP_EOL;
+                    break;
+                case 'string':
+                    $content .= $rtName . ' = \'\' . $this->getOne($sql);' . PHP_EOL;
+                    break;
+                case 'float':
+                    $content .= $rtName . ' = floatval($this->getOne($sql));' . PHP_EOL;
+                    break;
+                default:
+                    $content .= $this->setValue($xmlNode, $method->getReturnType(), $rtName);
+                    break;
+            }
 
-            switch ($methodReturnType) {
-                case 'int':$content .= '0;';break;
-                case 'float':$content .= '0.0;';break;
-                case 'array':$content .= '[];';break;
-                case '':case 'string':$content .= '\'\';';break;
-                default:$content .= 'null;';break;
+            $content .= 'return $this->commit()? ' . $rtName . ' : ';
+
+            switch ($methodReturnName) {
+                case 'int':
+                    $content .= '0;';
+                    break;
+                case 'float':
+                    $content .= '0.0;';
+                    break;
+                case 'array':
+                    $content .= '[];';
+                    break;
+                case '':
+                case 'string':
+                    $content .= '\'\';';
+                    break;
+                default:
+                    $content .= 'null;';
+                    break;
+            }
+        } else {
+            switch ($methodReturnName) {
+                case 'int':
+                    $content .= 'return intval($this->getOne($sql));' . PHP_EOL;
+                    break;
+                case 'string':
+                    $content .= 'return \'\' . $this->getOne($sql);' . PHP_EOL;
+                    break;
+                case 'float':
+                    $content .= 'return floatval($this->getOne($sql));' . PHP_EOL;
+                    break;
+                default:
+                    $content .= $this->setValue($xmlNode, $method->getReturnType(), $rtName);
+                    $content .= 'return ' . $rtName . ';' . PHP_EOL;
+                    break;
             }
         }
 
@@ -764,25 +1251,30 @@ class OrangeBatis
     /**
      * @param $path
      * @param $xml
+     * @param $idao
      * @return bool
      * @throws OrangeBatisException
      */
-    private static function checkFileTime($path, $xml)
+    private function checkFileTime($path, $xml, $idao)
     {
         $thisTime = filemtime(__FILE__);
         $pathTime = file_exists($path) ? filemtime($path) : 0;
         $xmlTime = file_exists($xml) ? filemtime($xml) : 0;
         if (empty($xmlTime)) {
-            throw new OrangeBatisException('xml "'.$xml.'" is not found!');
+            throw new OrangeBatisException('xml "' . $xml . '" is not found!');
         }
 
-        return ($pathTime >= max($thisTime, $xmlTime));
+        $idaoTime = filemtime($idao);
+        if (empty($idaoTime)) {
+            throw new OrangeBatisException('iDao "' . $idao . '" is not found!');
+        }
+
+        return ($pathTime >= max($thisTime, $xmlTime, $idaoTime));
     }
 
     /**
-     * @param string $interFaceName
+     * @param $interFaceName
      * @return object|string
-     * @throws OrangeBatisException
      * @throws OrangeBatisException
      */
     public function getMapper(string $interFaceName)
@@ -802,13 +1294,11 @@ class OrangeBatis
         $className = $xmlName . 'Proxy';
         $path = ROOT_PATH . self::$dirCompile . $className . '.php';
         $xml = ROOT_PATH . self::$dirXml . self::uncamelize($xmlName) . '.xml';
+        $idao = ROOT_PATH . 'DB/DAO/' . $interFaceName . '.php';
 
-        if (self::$forceCompile || !file_exists($path) || !self::checkFileTime($path, $xml)) {
+        if (self::$forceCompile || !file_exists($path) || !self::checkFileTime($path, $xml, $idao)) {
             //强制编译 或者 编译文件不存在
             $this->generatedClass($interFaceName);
-        } else {
-            /** @noinspection PhpIncludeInspection */
-            require_once $path;
         }
 
         return $className;

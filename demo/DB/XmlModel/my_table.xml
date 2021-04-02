@@ -24,10 +24,18 @@
     </select>
 
     <insert id="insert">
-        insert into my_table (id, first_name, last_name, gender)values(:id, :first_name, :last_name, :gender)
+        insert into my_table (
+        <variate collection="$my_table" name="$fields" type="field"/>
+        )values
+        <variate collection="$my_table" name="$values" type="value"/>
     </insert>
     <update id="updateLastNameById" transaction="true">
         update my_table set last_name=:lastName where id = :id
+    </update>
+    <update id="update" transaction="true">
+        update my_table set
+        <variate collection="$data" name="$sets" type="set"/>
+        where id = :id
     </update>
     <delete id="deleteById">
         delete from my_table where id = :id

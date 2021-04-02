@@ -45,9 +45,9 @@ class BaseBatisProxy
         return $this->db->getLastInsID();
     }
 
-    public function getLastSql():int
+    public function getLastSql():string
     {
-        return intval($this->db->getLastSql());
+        return $this->db->getLastSql();
     }
 
     public function begin()
@@ -60,7 +60,7 @@ class BaseBatisProxy
         return $this->db->commit();
     }
 
-    public function bindParam(string $name, $value)
+    public function bindParam(string $name, $value, $show = false)
     {
         $this->db->bindParam($name, $value);
     }
@@ -73,5 +73,63 @@ class BaseBatisProxy
     public function get($sql)
     {
         return $this->db->get($sql);
+    }
+
+    public function getRowCount()
+    {
+        return $this->db->getRowCount();
+    }
+
+    private function filterKey($k)
+    {
+        return str_replace('-', '_', $k);
+    }
+
+    /**
+     * @param $param
+     * @return array
+     */
+    public function getInsertInfo($data)
+    {
+        reset($data);
+        $fields = [];
+        $values = [];
+        $datas = [];
+        $length = 1;
+
+        if (key($data) === 0 && is_array($data[0])) {
+            $length = count($data);
+            foreach ($data as $_k => $_v) {
+                foreach ($_v as $_f => $_fv) {
+                    if (!is_null($_fv)) {
+                        $_f = trim($_f, '`');
+                        $fieldKey = $this->filterKey($_f) . '_' . $_k;
+                        //:$k不能以数字开头，所以添加下划线前缀
+                        if (!in_array("`{$_f}`", $fields)) {
+                            $fields[] = "`{$_f}`";
+                        }
+                        $values[$_k][] = ":{$fieldKey}";
+                        $datas[$fieldKey] = $_fv;
+                    }
+                }
+                $values[$_k] = '(' . implode(',', $values[$_k]) . ')';
+            }
+        } else {
+            foreach ($data as $_k => $_v) {
+                if (!is_null($_v)) {
+                    $_k = trim($_k, '`');
+                    $fieldKey = $this->filterKey($_k);
+                    //:$k不能以数字开头，所以添加下划线前缀
+                    $fields[] = "`{$_k}`";
+                    $values[] = ":{$fieldKey}";
+                    $datas[$fieldKey] = $_v;
+                }
+            }
+            $values = '(' . implode(',', $values) . ')';
+        }
+        $fields = implode(',', $fields);
+        is_array($values) && $values = implode(',', $values);
+
+        return [$fields, $values, $datas, $length];
     }
 }

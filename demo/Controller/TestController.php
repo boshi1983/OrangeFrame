@@ -100,7 +100,27 @@ class TestController implements BaseController
         $row->setFirstName('Smith');
         $row->setLastName('William');
         $row->setGender('M');
-        $rtStr .= '插入'.$this->myTable->insert($row).'条记录<br>';
+        $this->myTable->insert($row);
+        $rtStr .= '插入'.$this->myTable->getRowCount().'条记录<br>';
+        $rtStr .= 'sql：' . $this->myTable->getLastSql() . "<br>";
+
+        $rtStr .= '------------------------------------------------<br>';
+        $rtStr .= '获取10011号记录<br>';
+        $row = $this->myTable->getPersonById(10011);
+        $rtStr .= 'sql：' . $this->myTable->getLastSql() . "<br>";
+        $rtStr .= $row->getId() . "\t" . $row->getFirstName(). "\t" . $row->getLastName(). "\t" . $row->getGender() . "<br>";
+
+        $rtStr .= '------------------------------------------------<br>';
+
+        $rtStr .= '修改10011号记录的所有数据 支持事物<br>';
+        $rtStr .= "把刚插入的10011号数据，修改为：Parto\tMaliniak\tF<br>";
+        $row = new my_table();
+        $row->setId(10011);
+        $row->setFirstName('Parto');
+        $row->setLastName('Maliniak');
+        $row->setGender('F');
+
+        $rtStr .= $this->myTable->update($row).'修改完成<br>';
         $rtStr .= 'sql：' . $this->myTable->getLastSql() . "<br>";
 
         $rtStr .= '------------------------------------------------<br>';

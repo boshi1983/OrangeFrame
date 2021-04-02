@@ -755,6 +755,11 @@ abstract class Driver
         $this->model = $model;
     }
 
+    public function getRowCount()
+    {
+        return $this->numRows;
+    }
+
     /**
      * 析构方法
      * @access public

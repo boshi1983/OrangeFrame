@@ -12,5 +12,6 @@ interface iMyTableDao extends iBaseDao
 
     function insert(my_table $my_table);
     function updateLastNameById(int $id, string $lastName);
+    function update(my_table $data);
     function deleteById(int $id);
 }
