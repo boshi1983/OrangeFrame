@@ -643,7 +643,7 @@ abstract class Driver
      * @param bool $fetchOne
      * @return bool|array
      */
-    public function query(string $str, $fetchSql = false, $fetchOne = false)
+    public function &query(string $str, $fetchSql = false, $fetchOne = false)
     {
         if ($fetchSql) {
             return $str;
@@ -696,7 +696,7 @@ abstract class Driver
      * @param bool $fetchOne
      * @return array
      */
-    private function getResult(string $key, $fetchOne = false)
+    private function &getResult(string $key, $fetchOne = false)
     {
         if ($fetchOne) {
             $result = '';

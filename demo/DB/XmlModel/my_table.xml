@@ -1,20 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <mapper namespace="">
+    <sql id="fields">
+        id, first_name, last_name, gender
+    </sql>
     <select id="getListByIn" resultType="my_table">
-        select * from my_table where id in
+        select
+        <sql id="fields" />
+        from my_table where id in
         <foreach collection="$ids" item = "id" open="(" separator="," close=")">
             #{id}
         </foreach>
         order by id
     </select>
     <select id="getList" resultType="my_table">
-        select * from my_table limit :page, :pagecount
+        select
+        <sql id="fields" />
+        from my_table limit :page, :pagecount
     </select>
     <select id="getPersonById" resultType="my_table">
-        select * from my_table where id = :id
+        select
+        <sql id="fields" />
+        from my_table where id = :id
     </select>
     <select id="getPersonByFirstName" resultType="my_table">
-        select * from my_table where first_name = :firstName
+        select
+        <sql id="fields" />
+        from my_table where first_name = :firstName
     </select>
     <select id="getCount">
         select count(*) from my_table

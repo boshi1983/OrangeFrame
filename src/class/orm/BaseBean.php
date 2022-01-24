@@ -8,11 +8,7 @@ class BaseBean implements JsonSerializable
      */
     public function jsonSerialize()
     {
-        $data = [];
-        foreach ($this as $key => $val){
-            if ($val !== null) $data[$key] = $val;
-        }
-        return $data;
+        return $this->genDataMap();
     }
 
     /**

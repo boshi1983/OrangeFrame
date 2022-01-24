@@ -1,6 +1,10 @@
 <?php
 
 
+/**
+ * Class XmlNode
+ * @package Orange
+ */
 class XmlNode {
     /**
      * @var string
@@ -23,14 +27,29 @@ class XmlNode {
     private $transaction = false;
 
     /**
-     * @var string
+     * @var array
      */
-    private $func = '';
+    private $children = [];
+
+    /**
+     * @var array
+     */
+    private $attributes = [];
 
     /**
      * @var string
      */
     private $sql = '';
+
+    /**
+     * @var array
+     */
+    private $layer = [];
+
+    /**
+     * @var array
+     */
+    private $excludeParam = [];
 
     /**
      * XmlNode constructor.
@@ -39,12 +58,14 @@ class XmlNode {
      * @param string $resultType
      * @param false $transaction
      */
-    public function __construct(string $id, string $tag, string $resultType = '', $transaction = false)
+    public function __construct(array $attributes, string $tag)
     {
-        $this->id = $id;
-        $this->tag = $tag;
-        $this->resultType = $resultType;
-        $this->transaction = $transaction;
+        $this->id = $attributes['ID'] ?? '';
+        $this->tag = strtolower($tag);
+        $this->resultType = $attributes['RESULTTYPE'] ?? '';
+        $this->transaction = $attributes['TRANSACTION'] ?? '';
+
+        $this->setAttribute($attributes);
     }
 
     /**
@@ -114,22 +135,6 @@ class XmlNode {
     /**
      * @return mixed
      */
-    public function getFunc()
-    {
-        return $this->func;
-    }
-
-    /**
-     * @param mixed $func
-     */
-    public function setFunc($func): void
-    {
-        $this->func = $func;
-    }
-
-    /**
-     * @return mixed
-     */
     public function getSql()
     {
         return $this->sql;
@@ -141,5 +146,94 @@ class XmlNode {
     public function setSql($sql): void
     {
         $this->sql = $sql;
+    }
+
+    public function addChind($node): void
+    {
+        $this->children[] = $node;
+    }
+
+    /**
+     * @param $index
+     * @return array|string
+     */
+    public function getChildren($index = null)
+    {
+        if (is_null($index)) {
+            return $this->children;
+        }
+        return $this->children[$index];
+    }
+
+    public function setAttribute($attributes):void
+    {
+        $this->attributes = $attributes;
+    }
+
+    public function getAttribute($key)
+    {
+        if (empty($key)) {
+            return $this->attributes;
+        }
+
+        return $this->attributes[strtoupper($key)] ?? '';
+    }
+
+    /**
+     * @return array
+     */
+    public function getLayer(): array
+    {
+        return $this->layer;
+    }
+
+    /**
+     * @param array $layer
+     */
+    public function setLayer(array $layer): void
+    {
+        $this->layer = $layer;
+    }
+
+    /**
+     * @param BaseNode $node
+     * @return void
+     */
+    public function addlayer(BaseNode $node):void
+    {
+        $this->layer[] = $node;
+    }
+
+    /**
+     * @return mixed|string
+     */
+    public function getNameSpace()
+    {
+        return $this->attributes['NAMESPACE'] ?? '';
+    }
+
+    public function addExcludeParam($paramName) {
+        if (empty($paramName)) {
+            return;
+        }
+        $this->excludeParam[] = str_replace('$', '', $paramName);
+    }
+
+    /**
+     * @param array $paramList
+     * @return array
+     */
+    public function excludeParam(array $paramList)
+    {
+        if (empty($this->excludeParam)) {
+            return $paramList;
+        }
+        $rt = [];
+        foreach ($paramList as $param) {
+            if (!in_array($param['name'], $this->excludeParam)) {
+                $rt[] = $param;
+            }
+        }
+        return $rt;
     }
 }

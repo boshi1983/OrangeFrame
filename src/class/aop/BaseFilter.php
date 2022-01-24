@@ -1,11 +1,23 @@
 <?php
 
 
-interface BaseFilter
+class BaseFilter implements iFilter
 {
     /**
-     * @param FilterChain $link
+     * @var BaseFilter
+     */
+    public $prev;
+
+    /**
+     * @var BaseFilter
+     */
+    public $next;
+
+    /**
+     * @param $runtime
      * @return mixed
      */
-    function doFilter($data, FilterChain $link);
+    function doFilter($runtime) {
+        return $this->next->doFilter($runtime);
+    }
 }

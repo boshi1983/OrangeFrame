@@ -3,5 +3,5 @@
 
 interface BaseController
 {
-    function Process() ;
+    function Process($param) ;
 }

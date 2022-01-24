@@ -28,7 +28,7 @@ class TestController implements BaseController
      */
     public $testManager1;
 
-    public function Process() {
+    public function Process($param) {
 
         $rtStr = '带参数的依赖注入的类实例TestManager->show()<br>';
 

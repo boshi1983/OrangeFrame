@@ -15,16 +15,22 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 -src //设计模式源代码<br>
 ---class//类目录<br>
 -----aop//面向切片编程<br>
--------InvocationHandler.php//动态代理接口<br>
--------Proxy.php//动态代理生成器<br>
--------FilterChain.php//责任链<br>
 -------BaseFilter.php//责任链节点接口<br>
+-------FilterChain.php//责任链<br>
+-------FilterHead.php//责任链头<br>
+-------FilterTail.php//责任链尾部<br>
+-------iFilter.php//责任链节点接口<br>
+-------InvocationHandler.php//动态代理接口<br>
 -------JsonFilter.php//json数据打包解包的责任链节点<br>
+-------Proxy.php//动态代理生成器<br>
 -----ioc//依赖注入<br>
 -------Container.php//注入容器<br>
 -------DocParser.php//document解析器<br>
 -----orm//对象关系映射<br>
 -------BaseBatisProxy.php//代理基类<br>
+-------BaseBean.php//数据库表的映射对象<br>
+-------BaseNode.php//xml节点的接口<br>
+-------ChooseNode.php//xml节点中的选择分支
 -------iBaseDao.php//数据访问层基类接口<br>
 -------OrangeBatis.php//对象关系映射器<br>
 -log //日志目录<br>

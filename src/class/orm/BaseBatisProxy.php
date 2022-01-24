@@ -13,7 +13,7 @@ class BaseBatisProxy
      * @param string $sql
      * @return array|bool|string
      */
-    public function query(string $sql) {
+    public function &query(string $sql) {
         return $this->db->query($sql);
     }
 
@@ -26,12 +26,15 @@ class BaseBatisProxy
     }
 
     /**
-     * @param string $field in字段
-     * @param array $arr in数组
-     * @param bool $useOrder 是否需要排序
+     * @param $collection
+     * @param $item
+     * @param $content
+     * @param $open
+     * @param $separator
+     * @param $close
      * @return string
      */
-    protected function foreach($collection, $item, $content, $open, $separator, $close)
+    public function foreach($collection, $item, $content, $open, $separator, $close)
     {
         $rt = [];
         foreach($collection as $k => $v) {
@@ -40,6 +43,9 @@ class BaseBatisProxy
         return $open . join($separator, $rt) . $close;
     }
 
+    /**
+     * @return string|null
+     */
     public function getLastInsID()
     {
         return $this->db->getLastInsID();
@@ -55,22 +61,37 @@ class BaseBatisProxy
         $this->db->startTrans();
     }
 
-    public function commit():bool
+    /**
+     * @return bool
+     */
+    public function commit()
     {
         return $this->db->commit();
     }
 
-    public function bindParam(string $name, $value, $show = false)
+    /**
+     * @param string $name
+     * @param mixed $value
+     */
+    public function bindParam(string $name, $value)
     {
         $this->db->bindParam($name, $value);
     }
 
+    /**
+     * @param string $sql
+     * @return bool|string
+     */
     public function getOne(string $sql)
     {
         return $this->db->getOne($sql);
     }
 
-    public function get($sql)
+    /**
+     * @param string $sql
+     * @return array|null
+     */
+    public function get(string $sql)
     {
         return $this->db->get($sql);
     }
@@ -80,9 +101,36 @@ class BaseBatisProxy
         return $this->db->getRowCount();
     }
 
-    private function filterKey($k)
+    protected function filterKey($k)
     {
         return str_replace('-', '_', $k);
+    }
+
+    /**
+     * @param BaseBean $data
+     * @return array
+     */
+    public function getSelectWhere($data)
+    {
+        if ($data instanceof BaseBean) {
+            $data = $data->genDataMap();
+        }
+        reset($data);
+        $where = [];
+        foreach ($data as $_k => $_v) {
+            if (!is_null($_v)) {
+                $_k = trim($_k, '`');
+                $fieldKey = $this->filterKey($_k);
+                //:$k不能以数字开头，所以添加下划线前缀
+                $where[] = [
+                    'field' => $_k,
+                    'fieldKey' => $fieldKey,
+                    'value' => $_v
+                ];
+            }
+        }
+
+        return $where;
     }
 
     /**
@@ -91,6 +139,9 @@ class BaseBatisProxy
      */
     public function getInsertInfo($data)
     {
+        if ($data instanceof BaseBean) {
+            $data = $data->genDataMap();
+        }
         reset($data);
         $fields = [];
         $values = [];

@@ -1,7 +1,7 @@
 <?php
 
 
-class ControllerFilter implements BaseFilter
+class ControllerFilter extends BaseFilter
 {
     /**
      * @var BaseController
@@ -17,14 +17,13 @@ class ControllerFilter implements BaseFilter
         $this->controller = $controller;
     }
 
-
     /**
      * @param mixed $data
      * @param FilterChain $link
      * @return array|mixed|void
      */
-    function doFilter($data, FilterChain $link)
+    function doFilter($data)
     {
-        return $this->controller->Process();
+        return $this->controller->Process($data);
     }
 }

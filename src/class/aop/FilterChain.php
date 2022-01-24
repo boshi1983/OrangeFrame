@@ -3,8 +3,18 @@
 
 class FilterChain
 {
-    protected $filterList;
-    protected $curFilter = -1;
+    protected $filterHead;
+    protected $filterTail;
+
+    public function __construct()
+    {
+        $this->filterHead = new FilterHead();
+        $this->filterTail = new FilterTail();
+
+        $this->filterHead->next = $this->filterTail;
+        $this->filterTail->prev = $this->filterHead;
+    }
+
 
     /**
      * @param $filter
@@ -12,7 +22,12 @@ class FilterChain
      */
     public function add($filter)
     {
-        $this->filterList[] = $filter;
+        $filter->next = $this->filterTail;
+        $filter->prev = $this->filterTail->prev;
+
+        $this->filterTail->prev = $filter;
+        $filter->prev->next = $filter;
+
         return $this;
     }
 
@@ -24,11 +39,11 @@ class FilterChain
     function doFilter($param)
     {
         $rt = $param;
-        $this->curFilter++;
-        if ($this->curFilter < count($this->filterList)) {
-            $filter = $this->filterList[$this->curFilter];
-            $rt = $filter->doFilter($param, $this);
+
+        if (!empty($this->filterHead)) {
+            $rt = $this->filterHead->doFilter($param);
         }
+
         return $rt;
     }
 
