@@ -4,6 +4,13 @@ class Request extends Common
 {
     protected $clientData = null;
 
+    public function genObject($objName, $path = '') {
+        if (!empty($path) && file_exists($path)) {
+            include_once($path);
+        }
+        return $this->server->get($objName);
+    }
+
     /**
      * @return null
      */

@@ -18,6 +18,7 @@ class AutoLoad
         DS . 'demo' . DS . 'Plugin' . DS,
         DS . 'demo' . DS . 'Http' . DS,
         DS . 'demo' . DS . 'DB' . DS,
+        DS . 'demo' . DS . 'DB' . DS . 'Base' . DS,
         DS . 'demo' . DS . 'DB' . DS . 'DAO' . DS,
         DS . 'demo' . DS . 'DB' . DS . 'Bean' . DS,
         DS . 'src' . DS . 'class' . DS . 'aop' . DS,

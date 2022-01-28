@@ -11,7 +11,7 @@ defined('CONTROLLER_PATH') ? null : define('CONTROLLER_PATH', ROOT_PATH . 'Contr
 //---redis-master
 defined('REDIS_MASTER_HOST') ? null : define('REDIS_MASTER_HOST', 'redis');
 defined('REDIS_MASTER_PORT') ? null : define('REDIS_MASTER_PORT', '6379');
-defined('REDIS_MASTER_PW') ? null : define('REDIS_MASTER_PW', '123456');
+defined('REDIS_MASTER_PW') ? null : define('REDIS_MASTER_PW', '123');
 
 //---redis-slave
 //defined('REDIS_SLAVE_HOST') ? null : define('REDIS_SLAVE_HOST', 'redis');

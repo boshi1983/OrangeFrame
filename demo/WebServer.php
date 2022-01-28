@@ -11,14 +11,14 @@ class WebServer extends BaseServer
         //创建责任链
         $link = new FilterChain();
 
-        $request = new Request();
+        $request = new Request($this);
         //增加json过滤器
         if ($request->isAjax() || $request->isPost()) {
             $link->add(new JsonFilter());
         }
 
         //创建控制器过滤器
-        $controllerFilter = new ControllerFilter($this, $request);
+        $controllerFilter = new ControllerFilter($request);
 
         //对$controllerFilter增加动态代理
         $proxy = Proxy::newProxyInstance($controllerFilter, new class implements InvocationHandler
@@ -29,7 +29,8 @@ class WebServer extends BaseServer
                 $rt = $method->invokeArgs($target, $args);
                 $endtime = microtime(true);
 
-                $logcontent = '本次执行时间为：' . ($endtime - $starttime) . 's';
+                $dura = $endtime - $starttime;
+                $logcontent = '本次执行时间为：' . $dura . 's';
                 error_log($logcontent . PHP_EOL . PHP_EOL, 3, RES_PATH . 'log/' . date('Y-m-d').'.log');
                 return $rt;
             }

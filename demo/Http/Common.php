@@ -2,6 +2,16 @@
 
 class Common
 {
+    /**
+     * @var BaseServer
+     */
+    protected $server;
+
+    public function __construct($server)
+    {
+        $this->server = $server;
+    }
+
     function &getArray(&$obj, $key, $filter, $default)
     {
         if (isset($obj[$key])) {

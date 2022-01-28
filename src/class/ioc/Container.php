@@ -19,7 +19,7 @@ class Container
     /**
      * @var DocParser
      */
-    private $parser;
+    protected $parser;
 
     /**
      * @var OrangeBatis
@@ -70,8 +70,9 @@ class Container
      */
     public function set($name, $object)
     {
-        if(!isset($this->cache[$name])) {
-            $this->cache[$name] = $object;
+        $key = md5($name . var_export([], true));
+        if(!isset($this->cache[$key])) {
+            $this->cache[$key] = $object;
         }
     }
 
@@ -80,7 +81,8 @@ class Container
      */
     public function del($name)
     {
-        unset($this->cache[$name]);
+        $key = md5($name . var_export([], true));
+        unset($this->cache[$key]);
     }
 
     /**

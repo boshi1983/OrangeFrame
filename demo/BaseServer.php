@@ -22,8 +22,7 @@ class BaseServer extends Container
         $this->connectRedis();
         $this->set('server', $this);
 
-        $controllerLoader = $this->get('ControllerLoader');
-        $controllerLoader->scan();
+        $this->initMapping();
     }
 
     protected function connectMysql()
@@ -67,5 +66,10 @@ class BaseServer extends Container
         if (!empty($redis)) {
             $this->set('RedisModel', $redisHandler);
         }
+    }
+
+    protected function initMapping() {
+        $mappingPsr = $this->get('MappingProcessor');
+        $mappingPsr->init($this, $this->parser);
     }
 }
