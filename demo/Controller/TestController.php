@@ -2,7 +2,10 @@
 
 defined('TEST_CONST') ? null : define('TEST_CONST', 'this string is defined text');
 
-class TestController implements BaseController
+/**
+ * @Controller
+ */
+class TestController extends BaseController
 {
     /**
      * @inject iMyTableDao
@@ -13,24 +16,34 @@ class TestController implements BaseController
     /**
      * @inject TestManager
      * @var TestManager
-     * @param string 测试注入的字符串参数
-     * @param int 5
-     * @param string TEST_CONST
+     * @param string strname 测试注入的字符串参数
+     * @param int intname 5
+     * @param string constname TEST_CONST
      */
     public $testManager;
 
     /**
      * @inject TestManager
      * @var TestManager
-     * @param string 测试注入的字符串参数
-     * @param int 6
-     * @param string TEST_CONST
+     * @param string strname 测试注入的字符串参数
+     * @param int intname 6
+     * @param string constname TEST_CONST
      */
     public $testManager1;
 
-    public function Process($param) {
+    /**
+     * @param Request $request
+     * @param $debug
+     * @return string
+     * @RequestMapping /
+     */
+    public function Process(Request $request, int $debug) {
 
-        $rtStr = '带参数的依赖注入的类实例TestManager->show()<br>';
+        $rtStr = '由doc里面声明GetMapping/PostMapping/RequestMapping，通过$_SERVER[\'PHP_SELF\']找到当前控制器' .  '<br>';
+
+        $rtStr .= '$debug参数的值：'  . $debug .  '<br>';
+
+        $rtStr .= '带参数的依赖注入的类实例TestManager->show()<br>';
 
         $rtStr .= $this->testManager->show() . '<br>';
         $rtStr .= $this->testManager1->show() . '<br>';
@@ -46,7 +59,7 @@ class TestController implements BaseController
 
         $rtStr .= '------------------------------------------------<br>';
 
-        $rtStr .= '使用json打包实例<br>';
+        $rtStr .= '使用json打包实例列表<br>';
         $rtStr .= json_encode($list);
         $rtStr .= '<br>';
 

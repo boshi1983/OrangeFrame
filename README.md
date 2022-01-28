@@ -1,10 +1,12 @@
 橘子PHP框架
 1.以AOP、IOC为主的php后端框架，内涵动态代理、责任链、单例等设计模式；<br>
 2.其中ORM数据库对象映射OrangeBatis也是一大亮点。<br>
-OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的配置xml文件，内部使用动态代理模式创建数据库访问类，对数据表字段和对象进行自动映射，让使用者更注重业务本身。<br>
+3.橘子PHP框架借鉴了个大网站框架，并使用了各种设计模式，以学习为目的PHP web框架。<br>
+OrangeBatis参考了Java的MyBatis，使用了iXXXDao访问接口、sql的配置xml文件，内部使用动态代理模式创建数据库访问类，对数据表字段和对象进行自动映射，让使用者更注重业务本身。<br>
 <br>
 目录及主要类介绍：<br>
 -db //测试数据库<br>
+-nginx //nginx vhost配置文件
 -demo //测试环境<br>
 ---controller //控制器<br>
 ---DB //数据库<br>
@@ -12,6 +14,8 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 -----DAO //数据库访问接口<br>
 -----XmlModel //xml配置文件<br>
 ---ProxyTemp //动态代理生成类<br>
+---Http //请求封装类<br>
+---Plugin //各种管理工具<br>
 -src //设计模式源代码<br>
 ---class//类目录<br>
 -----aop//面向切片编程<br>
@@ -65,6 +69,15 @@ OrangeBatis参考了Java的MyBatis，同样使用了iXXXDao访问接口、sql的
 4.创建xml，使用表名命名xml的文件名，其中按照示例给出的格式：<br>
 节点tag（select、insert、update、delete）；id（接口名）；resultType（返回类型）；sql语句.<br>
 5.使用ioc注入方式创建，在标注成员变量的Doc时，使用@inject 类名 即可动态注入；<br>
+------------------------------------------------
+五.请求与功能的映射关系
+对CONTROLLER_PATH定义的Controller目录进行搜索，反射获取类doc和函数的Doc，其中需要关注一下几个关键字：<br>
+1.class Doc中的@Controller，每个类的Doc中必须定义@Controller，不然该类会被忽略;<br>
+2.响应函数必须是public；<br>
+3.响应函数的Doc中，必须声明GetMapping/PostMapping/RequestMapping；<br>
+4.其中，GetMapping只响应get请求，PostMapping只响应post请求，RequestMapping则都会响应；<br>
+5.以上GetMapping/PostMapping/RequestMapping也可以声明在类Doc中，最终将类的Mapping拼接上函数的Mapping，组成最终地址提供。<br>
+6.以上可以使用[域名/test2/b]进行测试<br>
 ------------------------------------------------
 以下为实例demo/controller/TastController的执行结果：<br>
 带参数的依赖注入的类实例TestManager->show()

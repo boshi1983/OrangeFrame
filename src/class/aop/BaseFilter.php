@@ -14,10 +14,10 @@ class BaseFilter implements iFilter
     public $next;
 
     /**
-     * @param $runtime
+     * @param Request $request
      * @return mixed
      */
-    function doFilter($runtime) {
-        return $this->next->doFilter($runtime);
+    function doFilter(Request $request) {
+        return $this->next->doFilter($request);
     }
 }

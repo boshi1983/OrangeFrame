@@ -21,6 +21,9 @@ class BaseServer extends Container
         $this->connectMysql();
         $this->connectRedis();
         $this->set('server', $this);
+
+        $controllerLoader = $this->get('ControllerLoader');
+        $controllerLoader->scan();
     }
 
     protected function connectMysql()

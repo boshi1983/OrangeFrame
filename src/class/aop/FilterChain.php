@@ -36,12 +36,12 @@ class FilterChain
      * @param FilterChain $link
      * @return mixed
      */
-    function doFilter($param)
+    function doFilter(Request $request)
     {
-        $rt = $param;
+        $rt = $request;
 
         if (!empty($this->filterHead)) {
-            $rt = $this->filterHead->doFilter($param);
+            $rt = $this->filterHead->doFilter($request);
         }
 
         return $rt;

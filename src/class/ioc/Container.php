@@ -122,7 +122,25 @@ class Container
      */
     public function &createObject(ReflectionClass $instance, array $depends, array $params = [])
     {
-        $object = $instance->newInstanceArgs($params);
+        $args = [];
+        $reflectionMethod = $instance->getConstructor();
+        if (!empty($reflectionMethod)) {
+            $reflectionParameters = $reflectionMethod->getParameters();
+            $countParam = count($reflectionParameters);
+            if ($countParam > 0) {
+                foreach ($reflectionParameters as $parameter) {
+                    if ('ReflectionClass' == $parameter->getType()) {
+                        $args[$parameter->getName()] = $instance;
+                    } elseif(isset($params[$parameter->getName()])) {
+                        $args[$parameter->getName()] = $params[$parameter->getName()];
+                    } else {
+                        $args[$parameter->getName()] = null;
+                    }
+                }
+            }
+        }
+
+        $object = $instance->newInstanceArgs($args);
         if (!empty($depends)) {
             foreach ($depends as $key => $value) {
 

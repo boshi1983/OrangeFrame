@@ -2,5 +2,5 @@
 
 interface iFilter
 {
-    function doFilter($runtime);
+    function doFilter(Request $request);
 }

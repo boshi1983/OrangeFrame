@@ -99,23 +99,26 @@ class DocParser
      */
     private function setParam($param, $value)
     {
-        if ($param == 'param' || $param == 'return') {
-            $value = $this->formatParamOrReturn($value);
-        }
-        if ($param == 'class') {
-            list ($param, $value) = $this->formatClass($value);
+        switch ($param) {
+            case 'param':
+            case 'return':
+                list ($name, $value) = $this->formatParamOrReturn($value);
+                break;
+            case 'class':
+                list ($param, $value) = $this->formatClass($value);
+                break;
         }
 
-        if (empty ($this->params [$param])) {
-            $this->params [$param] = $value;
-        } else if ($param == 'param') {
-            if (is_array($this->params [$param])) {
-                $this->params [$param][] = $value;
+        if ($param == 'param') {
+            if (!empty($this->params [$param]) && is_array($this->params [$param])) {
+                $this->params [$param][$name] = $value;
             } else {
-                $this->params [$param] = [$this->params [$param], $value];
+                $this->params [$param] = [$name => $value];
             }
-        } else {
-            $this->params [$param] = $value + $this->params [$param];
+        } elseif (empty ($this->params [$param])) {
+            $this->params [$param] = $value;
+        } else  {
+            $this->params [$param] = $value . $this->params [$param];
         }
         return true;
     }
@@ -143,16 +146,15 @@ class DocParser
 
     /**
      * @param $string
-     * @return string
+     * @return array|string
      */
     private function formatParamOrReturn($string)
     {
         $arr = explode(' ', $string);
         switch (count($arr)) {
-            case 2:
-            {
+            case 3:
                 /**
-                 * @var boolean
+                 * @var string
                  */
                 $type = $arr[0];
                 switch ($type) {
@@ -170,16 +172,12 @@ class DocParser
                     case 'string':
                         $type = 'strval';break;
                 }
-                $value = $type($arr[1]);
-                return defined($value)?constant($value):$value;
-            }
+                $value = $type($arr[2]);
+                return [$arr[1], defined($value)?constant($value):$value];
             default:
-            {
                 $pos = strpos($string, ' ');
-
                 $type = substr($string, 0, $pos);
-                return '(' . $type . ')' . substr($string, $pos + 1);
-            }
+                return ['', '(' . $type . ')' . substr($string, $pos + 1)];
         }
     }
 }

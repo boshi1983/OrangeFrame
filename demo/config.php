@@ -1,10 +1,12 @@
 <?php
+defined('DEBUG') ? null : define('DEBUG', true);
 //---root path
 defined('DS') ? null : define('DS', DIRECTORY_SEPARATOR);
 defined('SITE_ROOT') ? null : define('SITE_ROOT', dirname(__FILE__));
 defined('ROOT_PATH') ? null : define('ROOT_PATH', SITE_ROOT . DS);
 defined('RES_PATH') ? null : define('RES_PATH', '/var/www/OrangeFrame/');
 defined('DOMAIN') ? null : define('DOMAIN', 'pdp.test');
+defined('CONTROLLER_PATH') ? null : define('CONTROLLER_PATH', ROOT_PATH . 'Controller');
 
 //---redis-master
 defined('REDIS_MASTER_HOST') ? null : define('REDIS_MASTER_HOST', 'redis');

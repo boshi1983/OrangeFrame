@@ -8,14 +8,17 @@ class WebServer extends BaseServer
      */
     public function run()
     {
-        //创建测试控制器
-        /**
-         * @var $controller TestController
-         */
-        $controller = $this->get('TestController');
+        //创建责任链
+        $link = new FilterChain();
 
-        //创建控制器责任链节点
-        $controllerFilter = new ControllerFilter($controller);
+        $request = new Request();
+        //增加json过滤器
+        if ($request->isAjax() || $request->isPost()) {
+            $link->add(new JsonFilter());
+        }
+
+        //创建控制器过滤器
+        $controllerFilter = new ControllerFilter($this, $request);
 
         //对$controllerFilter增加动态代理
         $proxy = Proxy::newProxyInstance($controllerFilter, new class implements InvocationHandler
@@ -32,18 +35,10 @@ class WebServer extends BaseServer
             }
         });
 
-        //创建责任链
-        $link = new FilterChain();
-
-        //增加json过滤器
-        if (DemoDefine::isAjax() || DemoDefine::isPost()) {
-            $link->add(new JsonFilter());
-        }
-
         //设置主代理
         $link->add($proxy);
 
         //执行责任链
-        echo $link->doFilter('{}');
+        echo $link->doFilter($request);
     }
 }
